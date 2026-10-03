@@ -232,11 +232,14 @@ function ensurePlan(d){if(!S.plan[d]){const tpl=S.settings.templates[dtype(d)]||
   return S.plan[d]}
 function getBlocks(scope){return(scope==="wd"||scope==="we")?S.settings.templates[scope]:ensurePlan(scope).blocks}
 function sortBlocks(bl){bl.sort((a,b)=>tm(a.start)-tm(b.start)||tm(a.end)-tm(b.end))}
+const CHANGE=10;
 function dayItems(d){const p=ensurePlan(d),out=[],tr=+S.settings.travel||0;
   p.blocks.forEach(b=>{const s=tm(b.start),e=tm(b.end);out.push({type:"block",b,s,e});
-    if(b.kind==="edzes"&&p.workout==="uszas"&&tr>0){
-      out.push({type:"travel",s:s-tr,e:s,label:"Út az uszodába"});
-      out.push({type:"travel",s:e,e:e+tr,label:"Út haza az uszodából"})}});
+    if(b.kind==="edzes"&&p.workout==="uszas"){
+      if(tr>0)out.push({type:"travel",s:s-CHANGE-tr,e:s-CHANGE,label:"Út az uszodába"});
+      out.push({type:"travel",s:s-CHANGE,e:s,label:"Öltözés az úszás előtt"});
+      out.push({type:"travel",s:e,e:e+CHANGE,label:"Öltözés az úszás után"});
+      if(tr>0)out.push({type:"travel",s:e+CHANGE,e:e+CHANGE+tr,label:"Út haza az uszodából"})}});
   const off=x=>x.type==="block"&&x.b.kind==="edzes"&&p.workout==="nincs";
   out.sort((a,b)=>a.s-b.s||a.e-b.e);
   out.forEach(x=>{x.conf=!off(x)&&out.some(y=>y!==x&&!off(y)&&x.s<y.e&&y.s<x.e)});
@@ -377,7 +380,7 @@ function blockHtml(x,d,p){const b=x.b;
   if(b.kind==="edzes"){const wk=p.workout,tr=+S.settings.travel||0,dur=x.e-x.s;
     let h='<div class="blk'+(x.conf?" conf":"")+'" style="--c:var(--edzes)"><div class="bh"><h3>'+esc(b.title)+'</h3><span class="bt">'+b.start+"–"+b.end+'</span></div>'+
       '<div style="margin-top:8px">'+workoutSeg(d,wk)+'</div>';
-    if(wk==="uszas")h+='<p class="cap">Úszás '+fm(dur)+', az út oda-vissza 2 × '+tr+' perc, együtt '+fm(dur+2*tr)+'.</p>';
+    if(wk==="uszas")h+='<p class="cap">Úszás '+fm(dur)+', az út oda-vissza 2 × '+tr+' perc, az öltözés 2 × '+CHANGE+' perc, együtt '+fm(dur+2*tr+2*CHANGE)+'.</p>';
     else if(wk==="torna")h+='<p class="cap">Torna itthon, '+fm(dur)+'.</p>';
     else if(wk==="nincs")h+='<p class="cap">Ma pihenőnap, az edzés kihagyva.</p>';
     else h+='<p class="cap">Válassza ki, mi lesz az edzés.</p>';
