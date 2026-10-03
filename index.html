@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Horárium – napi fókusz</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#EDF0EC; --surface:#FAFBF9; --ink:#16252A; --muted:#5A696C; --line:#D2D9D4; --soft:#E3E8E3;
+  --tanulas:#4548B0; --munka:#0E6E66; --szabad:#A86C06; --pihenes:#A13F6B; --edzes:#587A12;
+  --warn:#8F3210; --warn-bg:#FAE8DC; --ok:#0E6E66;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10191C; --surface:#18252A; --ink:#E6ECE8; --muted:#94A4A5; --line:#2B3B40; --soft:#213036;
+    --tanulas:#9A9DF2; --munka:#4FC2B6; --szabad:#E4AE4C; --pihenes:#E58DB4; --edzes:#A9CC5C;
+    --warn:#F3B594; --warn-bg:#3A2218; --ok:#4FC2B6;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10191C; --surface:#18252A; --ink:#E6ECE8; --muted:#94A4A5; --line:#2B3B40; --soft:#213036;
+  --tanulas:#9A9DF2; --munka:#4FC2B6; --szabad:#E4AE4C; --pihenes:#E58DB4; --edzes:#A9CC5C;
+  --warn:#F3B594; --warn-bg:#3A2218; --ok:#4FC2B6;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Alegreya Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.4;
+  -webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:"Alegreya",Georgia,"Times New Roman",serif;font-weight:700;margin:0;line-height:1.15}
+h1{font-size:1.9rem} h2{font-size:1.25rem;margin:1.6rem 0 .6rem} h3{font-size:1.05rem}
+p{margin:0}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+main{max-width:620px;margin:0 auto;padding:18px 16px 96px}
+.muted{color:var(--muted)} .small{font-size:.9rem}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px}
+.head .date{color:var(--muted)}
+
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav div{max-width:620px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+nav button{min-height:54px;font-weight:500;font-size:.9rem;color:var(--muted);border-top:3px solid transparent}
+nav button[aria-current="page"]{color:var(--ink);border-top-color:var(--ink);font-weight:700}
+nav .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-left:4px;vertical-align:middle}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.alert{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.alert strong{font-weight:700}
+.alert .row{margin-top:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{min-height:44px;padding:0 16px;border-radius:10px;background:var(--ink);color:var(--bg);font-weight:700}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn.sm{min-height:38px;padding:0 12px;font-size:.92rem}
+.alert .btn.ghost{color:var(--warn);border-color:currentColor}
+
+.strip{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--soft);margin:10px 0 8px}
+.strip i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.9rem;color:var(--muted)}
+.legend b{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+
+.timer{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+.timer svg{width:128px;height:128px;flex:none}
+.timer .time{font-family:"Alegreya",Georgia,serif;font-weight:700;font-size:26px;fill:var(--ink);font-variant-numeric:tabular-nums}
+.timer .info{min-width:0;flex:1}
+.timer .info p{margin-bottom:8px}
+
+.days{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.days button{min-height:38px;padding:0 14px;color:var(--muted)}
+.days button[aria-pressed="true"]{background:var(--ink);color:var(--bg);font-weight:700}
+ul.tasks{list-style:none;margin:0;padding:0}
+.task{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;margin-bottom:8px}
+.task .top{display:flex;align-items:center;gap:4px;padding:4px 6px 4px 4px}
+.task .check{width:44px;height:44px;flex:none;display:grid;place-items:center}
+.task .check span{width:22px;height:22px;border:2px solid var(--muted);border-radius:50%;display:grid;place-items:center;font-size:14px;line-height:1}
+.task.done .check span{background:var(--c);border-color:var(--c);color:var(--surface)}
+.task .body{flex:1;min-width:0;text-align:left;padding:6px 2px;min-height:44px}
+.task .title{display:block;font-weight:500;overflow-wrap:anywhere}
+.task.done .title{text-decoration:line-through;color:var(--muted)}
+.task .meta{display:block;font-size:.88rem;color:var(--muted)}
+.task .meta em{font-style:normal;color:var(--c);font-weight:700}
+.task .late{color:var(--warn);font-weight:700}
+.task .play{width:44px;height:44px;flex:none;border-radius:50%;background:var(--c);color:var(--surface);font-size:15px;display:grid;place-items:center}
+.task .more{border-top:1px solid var(--line);padding:8px}
+.slot{border:1px dashed var(--line);border-radius:10px;padding:11px 14px;color:var(--muted);margin-bottom:8px;font-size:.95rem}
+
+.field{display:block;margin-bottom:10px}
+.field>span{display:block;font-weight:500;margin-bottom:4px}
+input[type=text],input[type=number],input[type=time],textarea,select{width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+textarea{min-height:76px;resize:vertical}
+.modes{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:10px}
+.modes button{min-height:42px;border:1px solid var(--line);border-radius:10px;border-left:5px solid var(--c);text-align:left;padding:0 10px}
+.modes button[aria-pressed="true"]{background:var(--c);color:var(--surface);font-weight:700;border-color:var(--c)}
+.chips button{min-height:38px;padding:0 12px;border:1px solid var(--line);border-radius:19px}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+.chips input{width:86px;min-height:38px}
+
+.wk{margin-bottom:16px}
+.wk .lab{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
+.wk .lab b{color:var(--c)}
+.bar{position:relative;height:16px;background:var(--soft);border-radius:8px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--c)}
+.bar u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.wk .note{font-size:.9rem;margin-top:4px}
+.wk .note.bad{color:var(--warn);font-weight:500}
+.chart{width:100%;height:auto;display:block}
+.chart text{font-size:11px;fill:var(--muted);font-family:"Alegreya Sans",sans-serif}
+.review{border-top:1px solid var(--line);padding:10px 0}
+.review p{margin-top:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.pills{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.pills button{min-height:54px;border:1px solid var(--line);border-radius:10px;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2}
+.pills button small{color:var(--muted);font-size:.78rem}
+.pills button.we{background:var(--soft)}
+.pills button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pills button[aria-pressed="true"] small{color:inherit}
+.pills button.today b{text-decoration:underline}
+.blk{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--c,var(--line));border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.blk.conf{border-color:var(--warn)}
+.blk .bh{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.blk .bt{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.92rem;white-space:nowrap}
+.blk .cap{font-size:.88rem;color:var(--muted);margin-top:2px}
+.blk .cap.over,.blk .cap.bad{color:var(--warn);font-weight:700}
+.blk ul.tasks{margin-top:8px}
+.blk .addrow{display:flex;gap:6px;margin-top:8px}
+.blk .addrow input{min-width:0}
+.travel{color:var(--muted);font-size:.9rem;padding:4px 12px 4px 14px;margin-bottom:8px;border-left:2px dashed var(--line)}
+.brow{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;padding:12px 0;border-top:1px solid var(--line)}
+.brow:first-child{border-top:0;padding-top:0}
+.brow .full{grid-column:1/-1}
+.brow .field{margin:0}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{min-height:42px;padding:0 14px;border:1px solid var(--line);border-radius:10px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+.wkgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.wkgrid div{border:1px solid var(--line);border-radius:8px;padding:6px 2px;font-size:.82rem;line-height:1.25;min-height:54px}
+.wkgrid .ok{background:var(--soft);font-weight:700}
+.tgt{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}
+.tgt input{min-height:42px}
+@media (prefers-reduced-motion:no-preference){.bar i,.strip i{transition:width .3s}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<nav aria-label="Nézetek"><div id="tabs"></div></nav>
+<script>
+"use strict";
+const MODES={tanulas:"Tanulás",munka:"Munka",szabad:"Szabadprogram",pihenes:"Pihenés",edzes:"Edzés"};
+const MK=Object.keys(MODES);
+const KEY="horarium-v1";
+const DAYS=["H","K","Sze","Cs","P","Szo","V"];
+const MONTHS=["január","február","március","április","május","június","július","augusztus","szeptember","október","november","december"];
+const DAYNAMES=["vasárnap","hétfő","kedd","szerda","csütörtök","péntek","szombat"];
+const WORKOUTS={uszas:"Úszás",torna:"Torna",nincs:"Pihenőnap"};
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function blk(start,end,title,mode,kind){const b={id:uid(),start,end,title,mode:mode||""};if(kind)b.kind=kind;return b}
+function defTemplates(){return{
+  wd:[blk("07:00","08:00","Tanulás","tanulas"),blk("08:00","09:00","Reggeli, készülődés","pihenes"),
+      blk("09:00","12:30","Munka","munka"),blk("12:30","13:30","Ebéd","pihenes"),blk("13:30","16:30","Munka","munka"),
+      blk("17:00","18:00","Edzés","edzes","edzes"),blk("18:30","20:00","Szabadprogram","szabad"),blk("20:00","22:00","Esti pihenés","pihenes")],
+  we:[blk("08:00","09:30","Reggeli, lassú indulás","pihenes"),blk("09:30","11:30","Tanulás","tanulas"),
+      blk("11:30","12:30","Edzés","edzes","edzes"),blk("13:00","14:00","Ebéd","pihenes"),
+      blk("14:30","18:30","Szabadprogram","szabad"),blk("19:00","22:00","Esti pihenés","pihenes")]}}
+function defTargets(){return{tanulas:{wd:5,we:2},munka:{wd:30,we:0},szabad:{wd:7,we:6},pihenes:{wd:15,we:8},edzes:{wd:5,we:2}}}
+function defaults(){return{v:2,updatedAt:0,
+  settings:{targets:defTargets(),focus:50,brk:10,travel:20,templates:defTemplates()},
+  tasks:[],log:{},reviews:{},timer:null,plan:{}}}
+function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=d.settings||{};
+  const s=Object.assign(b,d);s.v=2;
+  s.settings=Object.assign(b.settings,ds);
+  const tg=defTargets();MK.forEach(k=>{const t=(ds.targets||{})[k];
+    if(t&&typeof t==="object")tg[k]={wd:+t.wd||0,we:+t.we||0};});
+  s.settings.targets=tg;
+  const tp=ds.templates;
+  s.settings.templates=(tp&&Array.isArray(tp.wd)&&Array.isArray(tp.we))?tp:defTemplates();
+  s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};return s}
+
+let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,confirmReset=false,confirmDay=false,
+    flash="",syncOn=false,pDate=null,editPlan=false;
+try{const raw=localStorage.getItem(KEY);if(raw)S=normalize(JSON.parse(raw))}catch(e){}
+
+/* ---------- dates & time ---------- */
+function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
+function today(){return ymd(new Date())}
+function parseD(s){const p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2])}
+function weekDates(){const n=new Date(),i=(n.getDay()+6)%7,m=addDays(n,-i),a=[];for(let k=0;k<7;k++)a.push(ymd(addDays(m,k)));return a}
+function longDate(d){return d.getFullYear()+". "+MONTHS[d.getMonth()]+" "+d.getDate()+"., "+DAYNAMES[d.getDay()]}
+function shortDate(s){const p=s.split("-");return MONTHS[+p[1]-1].slice(0,3)+". "+(+p[2])+"."}
+function dtype(s){const g=parseD(s).getDay();return(g===0||g===6)?"we":"wd"}
+function tm(s){const m=/^(\d\d):(\d\d)$/.exec(s||"");return m?(+m[1])*60+(+m[2]):0}
+function hm(m){m=Math.max(0,Math.min(1439,Math.round(m)));return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
+
+/* ---------- format ---------- */
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function fm(m){m=Math.round(m);const h=Math.floor(m/60),r=m%60;return h?(r?h+" ó "+r+" p":h+" ó"):r+" p"}
+function fh(m){return (Math.round(m/6)/10).toLocaleString("hu-HU")+" ó"}
+
+/* ---------- persistence ---------- */
+let dbDoc=null,dbTimer=null,dbBusy=false,dbDirty=false;
+function save(){S.updatedAt=Date.now();
+  const cut=ymd(addDays(new Date(),-90));
+  S.tasks=S.tasks.filter(t=>t.date>=cut||!t.completed&&t.date>=ymd(addDays(new Date(),-120)));
+  for(const k of Object.keys(S.log))if(k<cut)delete S.log[k];
+  for(const k of Object.keys(S.plan))if(k<cut)delete S.plan[k];
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  if(dbDoc){dbDirty=true;clearTimeout(dbTimer);dbTimer=setTimeout(pushDb,900)}}
+async function pushDb(){if(!dbDoc||dbBusy)return;dbBusy=true;dbDirty=false;
+  try{await dbDoc.set(JSON.parse(JSON.stringify(S)))}catch(e){}
+  dbBusy=false;if(dbDirty)dbTimer=setTimeout(pushDb,900)}
+(async()=>{try{
+  if(!window.claude||!window.claude.use)return;
+  const[db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);
+  if(!db||!user)return;const id=await user.id();if(!id)return;
+  const doc=db.collection("data/users/"+id).doc("state");
+  const snap=await doc.get();dbDoc=doc;syncOn=true;
+  if(snap.exists){const d=snap.data();
+    if((d.updatedAt||0)>(S.updatedAt||0)){S=normalize(d);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+    else if((S.updatedAt||0)>(d.updatedAt||0))pushDb()}
+  else if(S.updatedAt)pushDb();
+  render()}catch(e){}})();
+
+/* ---------- plan (napirend) ---------- */
+function ensurePlan(d){if(!S.plan[d]){const tpl=S.settings.templates[dtype(d)]||[];
+  S.plan[d]={blocks:tpl.map(b=>Object.assign({},b,{id:uid()})).sort((a,b)=>tm(a.start)-tm(b.start)),workout:"",workoutDone:false}}
+  return S.plan[d]}
+function getBlocks(scope){return(scope==="wd"||scope==="we")?S.settings.templates[scope]:ensurePlan(scope).blocks}
+function sortBlocks(bl){bl.sort((a,b)=>tm(a.start)-tm(b.start)||tm(a.end)-tm(b.end))}
+function dayItems(d){const p=ensurePlan(d),out=[],tr=+S.settings.travel||0;
+  p.blocks.forEach(b=>{const s=tm(b.start),e=tm(b.end);out.push({type:"block",b,s,e});
+    if(b.kind==="edzes"&&p.workout==="uszas"&&tr>0){
+      out.push({type:"travel",s:s-tr,e:s,label:"Út az uszodába"});
+      out.push({type:"travel",s:e,e:e+tr,label:"Út haza az uszodából"})}});
+  const off=x=>x.type==="block"&&x.b.kind==="edzes"&&p.workout==="nincs";
+  out.sort((a,b)=>a.s-b.s||a.e-b.e);
+  out.forEach(x=>{x.conf=!off(x)&&out.some(y=>y!==x&&!off(y)&&x.s<y.e&&y.s<x.e)});
+  return out}
+function dayPlanMins(d){const p=ensurePlan(d),by={};MK.forEach(k=>by[k]=0);
+  p.blocks.forEach(b=>{if(b.mode&&by[b.mode]!==undefined&&!(b.kind==="edzes"&&p.workout==="nincs"))by[b.mode]+=Math.max(0,tm(b.end)-tm(b.start))});return by}
+function workoutMins(p){const b=p.blocks.find(x=>x.kind==="edzes");return b?Math.max(0,tm(b.end)-tm(b.start)):60}
+
+/* ---------- domain ---------- */
+function find(id){return S.tasks.find(t=>t.id===id)}
+function credit(t,min,date){if(min<=0)return;t.done=(t.done||0)+min;const d=date||today();
+  S.log[d]=S.log[d]||{};S.log[d][t.mode]=(S.log[d][t.mode]||0)+min}
+function uncredit(mode,min,date){if(S.log[date]){S.log[date][mode]=Math.max(0,(S.log[date][mode]||0)-min)}}
+function weekTotals(){const w=weekDates(),o={};MK.forEach(k=>o[k]=0);
+  w.forEach(d=>{const l=S.log[d];if(l)MK.forEach(k=>o[k]+=l[k]||0)});return o}
+function weekStatus(){const n=new Date(),i=(n.getDay()+6)%7,w=weekDates();
+  const frac=Math.min(1,Math.max(0,(n.getHours()+n.getMinutes()/60-7)/15)),left=7-i;
+  return MK.map(k=>{const T=S.settings.targets[k]||{wd:0,we:0},tw=(+T.wd||0)*60,te=(+T.we||0)*60;
+    let exp=0;for(let d=0;d<=i;d++){const dt=d<5?tw/5:te/2;exp+=d<i?dt:dt*frac}
+    let dw=0,de=0;w.forEach((dd,j)=>{const v=(S.log[dd]||{})[k]||0;if(j<5)dw+=v;else de+=v});
+    const done=dw+de,target=tw+te;
+    return{k,target,done,exp,tw,te,dw,de,left,
+      behind:target>0&&done<exp*0.75&&exp-done>=30,
+      perDay:Math.max(0,target-done)/left}})}
+function stale(){const t=today();return S.tasks.filter(x=>x.date<t&&!x.completed)}
+
+/* ---------- timer ---------- */
+let actx=null;
+function beep(){try{if(!actx)return;[0,.35,.7].forEach((o,i)=>{const os=actx.createOscillator(),g=actx.createGain();
+  os.frequency.value=i===2?880:660;os.connect(g);g.connect(actx.destination);
+  const t=actx.currentTime+o;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.03);
+  g.gain.exponentialRampToValueAtTime(.0001,t+.3);os.start(t);os.stop(t+.32)});
+  if(navigator.vibrate)navigator.vibrate([200,100,200])}catch(e){}}
+function startTimer(id){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}
+  if(S.timer)stopTimer(true);
+  S.timer={taskId:id,phase:"focus",startAt:Date.now(),durMs:(+S.settings.focus||50)*60000};save();render()}
+function stopTimer(silent){const t=S.timer;if(!t)return;
+  if(t.phase==="focus"){const el=Math.min(Date.now()-t.startAt,t.durMs),m=Math.round(el/60000),task=find(t.taskId);
+    if(task&&m>=1)credit(task,m)}
+  S.timer=null;document.title="Horárium – napi fókusz";if(!silent){save();render()}}
+function tick(){const t=S.timer;if(!t)return;const now=Date.now(),end=t.startAt+t.durMs;
+  if(now>=end){
+    if(t.phase==="focus"){const task=find(t.taskId);if(task)credit(task,Math.round(t.durMs/60000),ymd(new Date(end)));
+      S.timer={taskId:t.taskId,phase:"break",startAt:end,durMs:(+S.settings.brk||10)*60000};beep();save();render();return tick()}
+    S.timer=null;document.title="Horárium – napi fókusz";beep();save();render();return}
+  const rem=Math.ceil((end-now)/1000),txt=String(Math.floor(rem/60)).padStart(2,"0")+":"+String(rem%60).padStart(2,"0");
+  const el=document.getElementById("t-time"),ring=document.getElementById("t-ring");
+  if(el)el.textContent=txt;if(ring)ring.setAttribute("stroke-dashoffset",(339.29*(1-(now-t.startAt)/t.durMs)).toFixed(1));
+  document.title=txt+(t.phase==="focus"?" – fókusz":" – szünet")}
+setInterval(tick,500);
+
+/* ---------- shared html ---------- */
+function taskHtml(t,isToday){const run=S.timer&&S.timer.taskId===t.id&&S.timer.phase==="focus";
+  const late=(t.postponed||0)>=3;
+  let h='<li class="task'+(t.completed?" done":"")+'" style="--c:var(--'+t.mode+')"><div class="top">'+
+    '<button class="check" data-act="done" data-id="'+t.id+'" aria-label="'+(t.completed?"Visszaállítom":"Kész")+'"><span>'+(t.completed?"✓":"")+'</span></button>'+
+    '<button class="body" data-act="open" data-id="'+t.id+'" aria-expanded="'+(openId===t.id)+'"><span class="title">'+(t.star?"★ ":"")+esc(t.title)+'</span>'+
+    '<span class="meta"><em>'+MODES[t.mode]+'</em>, '+fm(t.plan)+' tervezve'+(t.done?", "+fm(t.done)+" ráfordítva":"")+
+    (t.postponed?' <span class="'+(late?"late":"")+'">· '+t.postponed+'× halasztva</span>':"")+'</span></button>';
+  if(isToday&&!t.completed&&!run)h+='<button class="play" data-act="start" data-id="'+t.id+'" aria-label="Fókuszblokk indítása">▶</button>';
+  h+='</div>';
+  if(openId===t.id){const bl=ensurePlan(t.date).blocks.filter(b=>b.kind!=="edzes");
+    h+='<div class="more">';
+    if(late&&!t.completed)h+='<p class="small late" style="margin-bottom:8px">Harmadszor is elhalasztotta. Érdemes dönteni: bontsa kisebbre, tegye fix időpontra, vagy törölje.</p>';
+    h+='<label class="field"><span class="small">Napirendi sáv</span><select data-assign="'+t.id+'"><option value="">Nincs sávhoz rendelve</option>'+
+      bl.map(b=>'<option value="'+b.id+'"'+(t.blockId===b.id?" selected":"")+'>'+b.start+"–"+b.end+" "+esc(b.title)+'</option>').join("")+'</select></label>';
+    h+='<div class="row"><button class="btn ghost sm" data-act="plan" data-d="-10" data-id="'+t.id+'">− 10 p</button>'+
+    '<button class="btn ghost sm" data-act="plan" data-d="10" data-id="'+t.id+'">+ 10 p</button>'+
+    '<button class="btn ghost sm" data-act="star" data-id="'+t.id+'">'+(t.star?"Kiemelés törlése":"A három közé")+'</button>'+
+    (isToday&&!t.completed?'<button class="btn ghost sm" data-act="postpone" data-id="'+t.id+'">Holnapra</button>':"")+
+    '<button class="btn ghost sm" data-act="del" data-id="'+t.id+'">Törlés</button></div></div>'}
+  return h+'</li>'}
+
+function blockRows(bl,scope){
+  return bl.map(b=>{const at='data-bs="'+scope+'" data-bid="'+b.id+'"';
+    return '<div class="brow">'+
+    '<label class="field"><span class="small">Kezdés</span><input type="time" step="300" value="'+esc(b.start)+'" '+at+' data-bf="start"></label>'+
+    '<label class="field"><span class="small">Vége</span><input type="time" step="300" value="'+esc(b.end)+'" '+at+' data-bf="end"></label>'+
+    '<label class="field full"><span class="small">Megnevezés</span><input type="text" maxlength="60" value="'+esc(b.title)+'" '+at+' data-bf="title"></label>'+
+    (b.kind==="edzes"?'<p class="muted small full">Edzés-sáv: ide kerül az úszás vagy a torna.</p>'
+      :'<label class="field full"><span class="small">Mód</span><select '+at+' data-bf="mode"><option value="">Nincs (általános sáv)</option>'+
+        MK.filter(k=>k!=="edzes").map(k=>'<option value="'+k+'"'+(b.mode===k?" selected":"")+'>'+MODES[k]+'</option>').join("")+'</select></label>')+
+    '<div class="full"><button class="btn ghost sm" data-act="bdel" data-s="'+scope+'" data-bid="'+b.id+'">Sáv törlése</button></div></div>'}).join("")}
+function addBlockBtns(scope){const bl=getBlocks(scope);
+  return '<div class="row" style="margin-top:10px"><button class="btn ghost sm" data-act="baddblock" data-s="'+scope+'">Sáv hozzáadása</button>'+
+    (bl.some(b=>b.kind==="edzes")?"":'<button class="btn ghost sm" data-act="baddblock" data-s="'+scope+'" data-k="edzes">Edzés-sáv hozzáadása</button>')+'</div>'}
+function workoutSeg(d,cur){return '<div class="seg" role="group" aria-label="Edzés fajtája">'+Object.keys(WORKOUTS).map(v=>
+  '<button data-act="wset" data-d="'+d+'" data-v="'+v+'" aria-pressed="'+(cur===v)+'">'+WORKOUTS[v]+'</button>').join("")+'</div>'}
+
+/* ---------- views ---------- */
+function nowPanel(){const d=today(),p=ensurePlan(d),items=dayItems(d).filter(x=>x.type==="block"&&!(x.b.kind==="edzes"&&p.workout==="nincs"));
+  const n=new Date(),nm=n.getHours()*60+n.getMinutes(),cur=items.find(x=>x.s<=nm&&nm<x.e),nxt=items.find(x=>x.s>nm);
+  let h='<div class="panel" style="margin-bottom:14px"><h3>A napirendből</h3>'+
+    '<p style="margin-top:6px">'+(cur?'<b>Most:</b> '+hm(cur.s)+"–"+hm(cur.e)+" "+esc(cur.b.title):'<span class="muted">Most nincs sáv.</span>')+'</p>'+
+    (nxt?'<p class="muted">Következő: '+hm(nxt.s)+"–"+hm(nxt.e)+" "+esc(nxt.b.title)+'</p>':"");
+  if(p.blocks.some(b=>b.kind==="edzes")){
+    h+='<p style="margin:10px 0 6px"><b>Edzés ma:</b> '+(p.workout?WORKOUTS[p.workout]+(p.workoutDone?", megvolt":""):'<span class="muted">még nincs kiválasztva</span>')+'</p>'+workoutSeg(d,p.workout)}
+  return h+'<p style="margin-top:10px"><button data-act="gonap" style="text-decoration:underline">Teljes napirend megnyitása</button></p></div>'}
+
+function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff===0;
+  const tasks=S.tasks.filter(t=>t.date===d);
+  let h='<div class="head"><div><h1>Horárium</h1><p class="date">'+longDate(now)+'</p></div></div>';
+  if(flash){h+='<div class="alert" role="status">'+esc(flash)+'</div>';flash=""}
+  const st=stale();
+  if(st.length)h+='<div class="alert"><strong>'+st.length+' befejezetlen feladat maradt a korábbi napokról.</strong>'+
+    '<div class="row"><button class="btn sm" data-act="carry">Áthozom mára</button><button class="btn ghost sm" data-act="drop">Elengedem</button></div></div>';
+  const beh=weekStatus().filter(x=>x.behind);
+  if(beh.length&&isToday)h+='<div class="alert"><strong>Heti elmaradás:</strong> '+beh.map(x=>MODES[x.k].toLowerCase()+" ("+fh(x.done)+" a "+fh(x.target)+"-ból)").join(", ")+
+    '. <button data-act="tab" data-v="het" style="text-decoration:underline">Részletek a heti nézetben</button></div>';
+  if(S.timer){const t=S.timer,task=find(t.taskId),c=task?task.mode:"munka",focus=t.phase==="focus";
+    h+='<div class="panel timer" style="--c:var(--'+c+')"><svg viewBox="0 0 128 128" role="img" aria-label="Időmérő">'+
+      '<circle cx="64" cy="64" r="54" fill="none" stroke="var(--soft)" stroke-width="9"/>'+
+      '<circle id="t-ring" cx="64" cy="64" r="54" fill="none" stroke="'+(focus?"var(--c)":"var(--muted)")+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="339.29" stroke-dashoffset="339.29" transform="rotate(-90 64 64)"/>'+
+      '<text id="t-time" class="time" x="64" y="73" text-anchor="middle">–</text></svg>'+
+      '<div class="info"><p class="muted small">'+(focus?"Fókuszblokk":"Szünet – álljon fel a géptől")+'</p><h3 style="margin-bottom:10px">'+esc(task?task.title:"")+'</h3>'+
+      '<button class="btn sm" data-act="stop">'+(focus?"Befejezem a blokkot":"Szünet kihagyása")+'</button></div></div>'}
+  if(isToday)h+=nowPanel();
+  h+='<div class="row" style="justify-content:space-between"><div class="days" role="group" aria-label="Nap">'+
+    '<button data-act="day" data-o="0" aria-pressed="'+(dayOff===0)+'">Ma</button><button data-act="day" data-o="1" aria-pressed="'+(dayOff===1)+'">Holnap</button></div>';
+  const plan=tasks.reduce((a,t)=>a+t.plan,0),done=tasks.reduce((a,t)=>a+(t.done||0),0);
+  h+='<span class="muted small">'+(tasks.length?fm(plan)+" tervezve"+(done?", "+fm(done)+" kész":""):"")+'</span></div>';
+  if(tasks.length){const by={};MK.forEach(k=>by[k]=tasks.filter(t=>t.mode===k).reduce((a,t)=>a+t.plan,0));
+    h+='<div class="strip" aria-hidden="true">'+MK.map(k=>by[k]?'<i style="width:'+(by[k]/plan*100)+'%;background:var(--'+k+')"></i>':"").join("")+'</div>'+
+    '<div class="legend">'+MK.filter(k=>by[k]).map(k=>'<span><b style="background:var(--'+k+')"></b>'+MODES[k]+" "+fm(by[k])+'</span>').join("")+'</div>'}
+  const stars=tasks.filter(t=>t.star),rest=tasks.filter(t=>!t.star);
+  h+='<h2>A nap három legfontosabbja</h2><ul class="tasks">'+stars.map(t=>taskHtml(t,isToday)).join("")+'</ul>';
+  for(let i=stars.length;i<3;i++)h+='<div class="slot">'+(tasks.length?"Szabad hely – nyissa meg a feladatot, és emelje ide.":"Vegyen fel feladatot alább vagy a napirendben, majd emelje ide a legfontosabbakat.")+'</div>';
+  if(rest.length)h+='<h2>További feladatok</h2><ul class="tasks">'+rest.map(t=>taskHtml(t,isToday)).join("")+'</ul>';
+  h+='<h2>Új feladat '+(isToday?"mára":"holnapra")+'</h2><div class="panel">'+
+    '<label class="field"><span>Mit szeretne elvégezni?</span><input type="text" id="f-title" maxlength="120" placeholder="pl. MIT-jegyzet 3. fejezete" autocomplete="off"></label>'+
+    '<div class="modes" role="group" aria-label="Mód">'+MK.map(k=>'<button data-act="fmode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(formMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
+    '<div class="row chips" role="group" aria-label="Időtartam" style="margin-bottom:12px">'+[25,50,100].map(m=>'<button data-act="fplan" data-m="'+m+'" aria-pressed="'+(formPlan===m)+'">'+fm(m)+'</button>').join("")+
+    '<input type="number" id="f-plan" min="5" max="600" step="5" inputmode="numeric" aria-label="Egyéni időtartam percben" placeholder="perc" value="'+([25,50,100].includes(formPlan)?"":formPlan)+'"></div>'+
+    '<button class="btn" data-act="add">Feladat felvétele</button></div>';
+  return h}
+
+function blockHtml(x,d,p){const b=x.b;
+  if(b.kind==="edzes"){const wk=p.workout,tr=+S.settings.travel||0,dur=x.e-x.s;
+    let h='<div class="blk'+(x.conf?" conf":"")+'" style="--c:var(--edzes)"><div class="bh"><h3>'+esc(b.title)+'</h3><span class="bt">'+b.start+"–"+b.end+'</span></div>'+
+      '<div style="margin-top:8px">'+workoutSeg(d,wk)+'</div>';
+    if(wk==="uszas")h+='<p class="cap">Úszás '+fm(dur)+', az út oda-vissza 2 × '+tr+' perc, együtt '+fm(dur+2*tr)+'.</p>';
+    else if(wk==="torna")h+='<p class="cap">Torna itthon, '+fm(dur)+'.</p>';
+    else if(wk==="nincs")h+='<p class="cap">Ma pihenőnap, az edzés kihagyva.</p>';
+    else h+='<p class="cap">Válassza ki, mi lesz az edzés.</p>';
+    if(wk==="uszas"||wk==="torna")h+='<div class="row" style="margin-top:8px"><button class="btn sm" data-act="wdone" data-d="'+d+'">'+(p.workoutDone?"Megvolt – visszavonom":"Megvolt")+'</button></div>';
+    if(x.conf)h+='<p class="cap bad">Időben ütközik egy másik sávval.</p>';
+    return h+'</div>'}
+  const ts=S.tasks.filter(t=>t.date===d&&t.blockId===b.id),dur=x.e-x.s,planned=ts.reduce((a,t)=>a+t.plan,0),isToday=d===today();
+  let h='<div class="blk'+(x.conf?" conf":"")+'"'+(b.mode?' style="--c:var(--'+b.mode+')"':"")+'><div class="bh"><h3>'+esc(b.title)+'</h3><span class="bt">'+b.start+"–"+b.end+'</span></div>'+
+    '<p class="cap'+(planned>dur?" over":"")+'">'+(b.mode?MODES[b.mode]+", ":"")+(planned>dur?"a feladatok "+fm(planned-dur)+"-cal hosszabbak a sávnál":(planned?fm(planned)+" tervezve a "+fm(dur)+"-ból":fm(dur)+" szabad"))+'</p>';
+  if(x.conf)h+='<p class="cap bad">Időben ütközik egy másik sávval.</p>';
+  if(ts.length)h+='<ul class="tasks">'+ts.map(t=>taskHtml(t,isToday)).join("")+'</ul>';
+  h+='<div class="addrow"><input type="text" id="bt-'+b.id+'" maxlength="120" placeholder="Feladat ebbe a sávba" aria-label="Új feladat a sávba" autocomplete="off">'+
+    '<button class="btn sm" data-act="badd" data-d="'+d+'" data-bid="'+b.id+'">Hozzáad</button></div>';
+  return h+'</div>'}
+
+function viewNapirend(){const w=weekDates();if(!pDate||!w.includes(pDate))pDate=today();
+  const d=pDate,p=ensurePlan(d),isToday=d===today(),ty=dtype(d);
+  let h='<div class="head"><div><h1>Napirend</h1><p class="date">'+longDate(parseD(d))+', '+(ty==="wd"?"hétköznap":"hétvége")+'</p></div>'+
+    '<button class="btn ghost sm" data-act="pedit">'+(editPlan?"Kész":"Sávok szerkesztése")+'</button></div>';
+  if(flash){h+='<div class="alert" role="status">'+esc(flash)+'</div>';flash=""}
+  h+='<div class="pills" role="group" aria-label="A hét napjai">'+w.map((dd,i)=>
+    '<button data-act="pday" data-d="'+dd+'" class="'+(i>=5?"we ":"")+(dd===today()?"today":"")+'" aria-pressed="'+(dd===d)+'"><b>'+DAYS[i]+'</b><small>'+(+dd.slice(8))+'.</small></button>').join("")+'</div>';
+  h+='<p class="muted small" style="margin-bottom:12px">Az első öt nap hétköznap, a két szürke hétvége. Mindkettőnek külön sablonja van a Beállításban.</p>';
+  const by=dayPlanMins(d),sum=MK.reduce((a,k)=>a+by[k],0);
+  if(sum)h+='<div class="strip" aria-hidden="true">'+MK.map(k=>by[k]?'<i style="width:'+(by[k]/sum*100)+'%;background:var(--'+k+')"></i>':"").join("")+'</div>'+
+    '<div class="legend" style="margin-bottom:14px">'+MK.filter(k=>by[k]).map(k=>'<span><b style="background:var(--'+k+')"></b>'+MODES[k]+" "+fm(by[k])+'</span>').join("")+'</div>';
+  if(editPlan){
+    h+='<div class="panel">'+(p.blocks.length?blockRows(p.blocks,d):'<p class="muted">Ennek a napnak még nincs sávja.</p>')+addBlockBtns(d)+'</div>'+
+      '<div class="row" style="margin-top:12px"><button class="btn ghost sm" data-act="dayreset">'+(confirmDay?"Biztosan visszaállítom":"Visszaállítás a "+(ty==="wd"?"hétköznapi":"hétvégi")+" sablonra")+'</button></div>'+
+      '<p class="muted small" style="margin-top:6px">A visszaállítás a nap sávjait cseréli le, a feladatok megmaradnak, de sáv nélkül.</p>';
+    return h}
+  const items=dayItems(d);
+  if(!items.length)h+='<div class="slot">Nincs sáv. A „Sávok szerkesztése” gombbal vehet fel.</div>';
+  items.forEach(x=>{h+=x.type==="travel"?'<div class="travel">'+hm(x.s)+"–"+hm(x.e)+" "+x.label+'</div>':blockHtml(x,d,p)});
+  const ids=p.blocks.map(b=>b.id),loose=S.tasks.filter(t=>t.date===d&&(!t.blockId||!ids.includes(t.blockId)));
+  if(loose.length)h+='<h2>Sávhoz nem rendelt feladatok</h2><ul class="tasks">'+loose.map(t=>taskHtml(t,isToday)).join("")+'</ul>'+
+    '<p class="muted small">Nyissa meg a feladatot, és válasszon neki napirendi sávot.</p>';
+  return h}
+
+function viewHet(){const w=weekDates(),st=weekStatus();
+  let h='<div class="head"><div><h1>Heti mérleg</h1><p class="date">'+shortDate(w[0])+" – "+shortDate(w[6])+'</p></div></div>';
+  const beh=st.filter(x=>x.behind);
+  h+=beh.length?'<div class="alert"><strong>'+beh.length+' területen van elmaradás.</strong> A fekete jel mutatja, hol kellene tartania a hét e pontján.</div>'
+    :'<p class="muted" style="margin-bottom:14px">Nincs elmaradás. A fekete jel mutatja, hol kellene tartania a hét e pontján.</p>';
+  h+='<div class="panel">'+st.map(x=>{const max=Math.max(x.target,x.done,1);
+    return '<div class="wk" style="--c:var(--'+x.k+')"><div class="lab"><b>'+MODES[x.k]+'</b><span>'+fh(x.done)+" / "+fh(x.target)+'</span></div>'+
+    '<div class="bar"><i style="width:'+(x.done/max*100)+'%"></i>'+(x.target?'<u style="left:'+(x.exp/max*100)+'%"></u>':"")+'</div>'+
+    '<p class="note muted">Hétköznap '+fh(x.dw)+" / "+fh(x.tw)+", hétvége "+fh(x.de)+" / "+fh(x.te)+'</p>'+
+    (x.target?'<p class="note'+(x.behind?" bad":" muted")+'">'+(x.done>=x.target?"A heti cél teljesült.":(x.behind?"Elmaradás: "+fh(x.exp-x.done)+". ":"")+"A hátralévő "+x.left+" napra napi "+fh(x.perDay)+" jut.")+'</p>':'<p class="note muted">Nincs heti cél beállítva.</p>')+'</div>'}).join("")+'</div>';
+  h+='<h2>Edzések a héten</h2><div class="panel"><div class="wkgrid">'+w.map((dd,i)=>{const p=S.plan[dd],wk=p&&p.workout;
+    return '<div class="'+(p&&p.workoutDone?"ok":"")+'"><b>'+DAYS[i]+'</b><br>'+(wk?WORKOUTS[wk]:"–")+(p&&p.workoutDone?'<br>✓':"")+'</div>'}).join("")+'</div>'+
+    '<p class="muted small" style="margin-top:8px">'+w.filter(dd=>S.plan[dd]&&S.plan[dd].workoutDone).length+' edzés készült el, ebből '+
+    w.filter(dd=>S.plan[dd]&&S.plan[dd].workoutDone&&S.plan[dd].workout==="uszas").length+' úszás.</p></div>';
+  const tot=w.map(d=>MK.map(k=>(S.log[d]||{})[k]||0)),mx=Math.max(60,...tot.map(a=>a.reduce((x,y)=>x+y,0)));
+  let svg='<svg class="chart" viewBox="0 0 320 150" role="img" aria-label="Napi ráfordítás módok szerint">';
+  tot.forEach((a,i)=>{let y=120;const x=14+i*43;a.forEach((m,j)=>{if(!m)return;const hh=m/mx*104;y-=hh;
+      svg+='<rect x="'+x+'" y="'+y.toFixed(1)+'" width="30" height="'+hh.toFixed(1)+'" fill="var(--'+MK[j]+')"/>'});
+    const s=a.reduce((p,q)=>p+q,0);
+    if(s)svg+='<text x="'+(x+15)+'" y="'+(y-4).toFixed(1)+'" text-anchor="middle">'+(Math.round(s/6)/10).toLocaleString("hu-HU")+'</text>';
+    svg+='<text x="'+(x+15)+'" y="138" text-anchor="middle"'+(w[i]===today()?' style="font-weight:700;fill:var(--ink)"':"")+'>'+DAYS[i]+'</text>'});
+  svg+='<line x1="8" y1="120.5" x2="312" y2="120.5" stroke="var(--line)"/></svg>';
+  h+='<h2>Napi ráfordítás (óra)</h2><div class="panel">'+svg+'<div class="legend" style="margin-top:6px">'+MK.map(k=>'<span><b style="background:var(--'+k+')"></b>'+MODES[k]+'</span>').join("")+'</div></div>';
+  const wt=S.tasks.filter(t=>w.includes(t.date)),pl=wt.reduce((a,t)=>a+t.plan,0),dn=wt.reduce((a,t)=>a+(t.done||0),0);
+  h+='<h2>Terv és valóság</h2><div class="panel"><p>A héten '+fm(pl)+' munkát tervezett feladatokba, ebből '+fm(dn)+' valósult meg'+(pl?" ("+Math.round(dn/pl*100)+"%)":"")+'. '+wt.filter(t=>t.completed).length+' feladat készült el a '+wt.length+'-ból.</p></div>';
+  const late=S.tasks.filter(t=>!t.completed&&(t.postponed||0)>=2).sort((a,b)=>b.postponed-a.postponed);
+  h+='<h2>Halasztott feladatok</h2>'+(late.length?'<ul class="tasks">'+late.map(t=>'<li class="task" style="--c:var(--'+t.mode+')"><div class="top" style="padding:10px 12px"><span class="body"><span class="title">'+esc(t.title)+'</span><span class="meta"><span class="'+(t.postponed>=3?"late":"")+'">'+t.postponed+'× halasztva</span>, '+MODES[t.mode].toLowerCase()+", "+fm(t.plan)+'</span></span></div></li>').join("")+'</ul>'
+    :'<p class="muted">Nincs többször elhalasztott feladata.</p>');
+  return h}
+
+function viewEste(){const d=today(),r=S.reviews[d]||{};
+  let h='<div class="head"><div><h1>Esti két perc</h1><p class="date">Három rövid válasz, hogy a holnap ne a nulláról induljon.</p></div></div>';
+  if(flash){h+='<div class="alert" role="status" style="background:var(--soft);color:var(--ink)">'+esc(flash)+'</div>';flash=""}
+  const tl=S.log[d]||{},sum=MK.reduce((a,k)=>a+(tl[k]||0),0);
+  h+='<p class="muted" style="margin-bottom:12px">Mai ráfordítás: '+(sum?MK.filter(k=>tl[k]).map(k=>MODES[k].toLowerCase()+" "+fm(tl[k])).join(", "):"még nincs rögzített idő")+'.</p>';
+  h+='<div class="panel"><label class="field"><span>Mi ment jól ma?</span><textarea id="r-good" maxlength="600">'+esc(r.good||"")+'</textarea></label>'+
+    '<label class="field"><span>Mi csúszott el, és miért?</span><textarea id="r-slip" maxlength="600">'+esc(r.slip||"")+'</textarea></label>'+
+    '<label class="field"><span>Mi lesz a holnapi első feladat?</span><input type="text" id="r-first" maxlength="120" value="'+esc(r.first||"")+'" autocomplete="off"></label>'+
+    '<div class="modes" role="group" aria-label="A holnapi első feladat módja">'+MK.map(k=>'<button data-act="fmode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(formMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
+    '<button class="btn" data-act="review">Visszatekintés mentése</button>'+
+    '<p class="muted small" style="margin-top:8px">A holnapi első feladat kiemelve bekerül a holnapi listába.</p></div>';
+  const old=Object.keys(S.reviews).filter(k=>k<d).sort().reverse().slice(0,7);
+  if(old.length)h+='<h2>Korábbi visszatekintések</h2>'+old.map(k=>{const x=S.reviews[k];return '<div class="review"><h3>'+shortDate(k)+'</h3>'+
+    (x.good?'<p><span class="muted">Jól ment:</span> '+esc(x.good)+'</p>':"")+(x.slip?'<p><span class="muted">Elcsúszott:</span> '+esc(x.slip)+'</p>':"")+(x.first?'<p><span class="muted">Másnapi első:</span> '+esc(x.first)+'</p>':"")+'</div>'}).join("");
+  return h}
+
+function viewBeall(){const s=S.settings,T=s.targets;
+  let h='<div class="head"><div><h1>Beállítások</h1><p class="date">A heti célokhoz méri az alkalmazás az elmaradást.</p></div></div>';
+  const sw=MK.reduce((a,k)=>a+(+T[k].wd||0),0),se=MK.reduce((a,k)=>a+(+T[k].we||0),0);
+  h+='<h2 style="margin-top:0">Heti célok (óra)</h2><div class="panel"><div class="tgt"><span></span><b class="small">Hétköznap (H–P)</b><b class="small">Hétvége (Szo–V)</b></div>'+
+    MK.map(k=>'<div class="tgt"><span style="color:var(--'+k+');font-weight:700">'+MODES[k]+'</span>'+
+      '<input type="number" min="0" max="100" step="0.5" inputmode="decimal" aria-label="'+MODES[k]+', hétköznap, óra" data-set="target" data-k="'+k+'" data-t="wd" value="'+T[k].wd+'">'+
+      '<input type="number" min="0" max="100" step="0.5" inputmode="decimal" aria-label="'+MODES[k]+', hétvége, óra" data-set="target" data-k="'+k+'" data-t="we" value="'+T[k].we+'"></div>').join("")+
+    '<p class="muted small">Hétköznap összesen '+sw.toLocaleString("hu-HU")+' óra, hétvégén '+se.toLocaleString("hu-HU")+' óra. A hétköznapi órák öt napra, a hétvégiek két napra oszlanak.</p></div>';
+  h+='<h2>Hétköznapi napirend-sablon</h2><div class="panel">'+blockRows(s.templates.wd,"wd")+addBlockBtns("wd")+'</div>';
+  h+='<h2>Hétvégi napirend-sablon</h2><div class="panel">'+blockRows(s.templates.we,"we")+addBlockBtns("we")+
+    '<p class="muted small" style="margin-top:8px">A sablon az újonnan megnyitott napokra érvényes. Egy konkrét nap sávjait a Napirend nézetben módosíthatja.</p></div>';
+  h+='<h2>Edzés és fókuszritmus</h2><div class="panel"><div class="grid2"><label class="field"><span>Út az uszodába (perc, egy irány)</span><input type="number" min="0" max="120" step="5" inputmode="numeric" data-set="travel" value="'+s.travel+'"></label><span></span>'+
+    '<label class="field"><span>Fókuszblokk (perc)</span><input type="number" min="5" max="180" step="5" inputmode="numeric" data-set="focus" value="'+s.focus+'"></label>'+
+    '<label class="field"><span>Szünet (perc)</span><input type="number" min="1" max="60" inputmode="numeric" data-set="brk" value="'+s.brk+'"></label></div>'+
+    '<p class="muted small">A blokk végén hangjelzés szól, ha az alkalmazás nyitva van.</p></div>';
+  h+='<h2>Adatok</h2><div class="panel"><p style="margin-bottom:10px">'+(syncOn?"Az adatai a fiókjához kötve mentődnek, így másik eszközön is ugyanezt látja.":"Az adatai jelenleg ezen az eszközön, ebben a böngészőben mentődnek.")+'</p>'+
+    '<button class="btn ghost" data-act="reset">'+(confirmReset?"Biztosan törlöm az összes adatot":"Minden adat törlése")+'</button></div>';
+  return h}
+
+function render(){const beh=weekStatus().some(x=>x.behind);
+  document.getElementById("tabs").innerHTML=[["ma","Ma"],["nap","Napirend"],["het","Hét"],["este","Este"],["beall","Beállítás"]].map(a=>
+    '<button data-act="tab" data-v="'+a[0]+'"'+(view===a[0]?' aria-current="page"':"")+'>'+a[1]+(a[0]==="het"&&beh?'<span class="dot" aria-label="elmaradás"></span>':"")+(a[0]==="ma"&&S.timer&&view!=="ma"?'<span class="dot" style="background:var(--ok)" aria-label="fut az időmérő"></span>':"")+'</button>').join("");
+  document.getElementById("app").innerHTML=({ma:viewMa,nap:viewNapirend,het:viewHet,este:viewEste,beall:viewBeall})[view]();
+  tick()}
+
+/* ---------- events ---------- */
+function setWorkout(d,v){const p=ensurePlan(d);
+  if(p.workoutDone&&(v==="nincs"||v!==p.workout))undoWorkout(d,p);
+  p.workout=(p.workout===v&&!p.workoutDone)?"":v}
+function undoWorkout(d,p){if(p.workoutDone){uncredit("edzes",p.workoutCredit||0,d);p.workoutDone=false;p.workoutCredit=0}}
+
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;
+  const a=b.dataset.act,t=b.dataset.id?find(b.dataset.id):null;
+  if(a!=="reset")confirmReset=false;
+  if(a!=="dayreset")confirmDay=false;
+  switch(a){
+    case "tab":view=b.dataset.v;openId=null;editPlan=false;window.scrollTo(0,0);break;
+    case "gonap":view="nap";pDate=today();openId=null;editPlan=false;window.scrollTo(0,0);break;
+    case "day":dayOff=+b.dataset.o;openId=null;break;
+    case "open":openId=openId===b.dataset.id?null:b.dataset.id;break;
+    case "fmode":{formMode=b.dataset.k;document.querySelectorAll('[data-act="fmode"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===formMode));return}
+    case "fplan":{formPlan=+b.dataset.m;const i=document.getElementById("f-plan");if(i)i.value="";
+      document.querySelectorAll('[data-act="fplan"]').forEach(x=>x.setAttribute("aria-pressed",+x.dataset.m===formPlan));return}
+    case "add":{const ti=document.getElementById("f-title"),pi=document.getElementById("f-plan"),title=ti.value.trim();
+      if(!title){ti.focus();return}
+      const plan=Math.min(600,Math.max(5,Math.round(+pi.value||formPlan||50)));
+      S.tasks.push({id:uid(),date:ymd(addDays(new Date(),dayOff)),title,mode:formMode,plan,done:0,star:false,completed:false,postponed:0,blockId:null});save();break}
+    case "done":if(!t)return;
+      if(!t.completed){t.completed=true;const diff=t.plan-(t.done||0);
+        if(diff>0){credit(t,diff);t.auto={min:diff,date:today()}}
+        if(S.timer&&S.timer.taskId===t.id&&S.timer.phase==="focus"){S.timer=null;document.title="Horárium – napi fókusz"}}
+      else{t.completed=false;if(t.auto){t.done=Math.max(0,t.done-t.auto.min);uncredit(t.mode,t.auto.min,t.auto.date);delete t.auto}}
+      save();break;
+    case "start":startTimer(b.dataset.id);window.scrollTo(0,0);return;
+    case "stop":stopTimer();return;
+    case "plan":if(!t)return;t.plan=Math.min(600,Math.max(5,t.plan+(+b.dataset.d)));save();break;
+    case "star":if(!t)return;
+      if(!t.star&&S.tasks.filter(x=>x.date===t.date&&x.star).length>=3){flash="Már három feladat van kiemelve. Előbb vegyen ki egyet – a három éppen attól ér valamit, hogy csak három.";break}
+      t.star=!t.star;save();break;
+    case "postpone":if(!t)return;if(S.timer&&S.timer.taskId===t.id)stopTimer(true);
+      t.date=ymd(addDays(new Date(),1));t.postponed=(t.postponed||0)+1;t.star=false;t.blockId=null;openId=null;
+      if(t.postponed>=3)flash="„"+t.title+"” már "+t.postponed+" alkalommal került át másnapra. Érdemes dönteni róla.";save();break;
+    case "del":if(!t)return;if(S.timer&&S.timer.taskId===t.id)stopTimer(true);S.tasks=S.tasks.filter(x=>x!==t);openId=null;save();break;
+    case "carry":{const d=today();stale().forEach(x=>{x.date=d;x.postponed=(x.postponed||0)+1;x.star=false;x.blockId=null});save();break}
+    case "drop":{const st=stale();S.tasks=S.tasks.filter(x=>!st.includes(x));save();break}
+    case "pday":pDate=b.dataset.d;openId=null;editPlan=false;confirmDay=false;break;
+    case "pedit":editPlan=!editPlan;break;
+    case "wset":setWorkout(b.dataset.d,b.dataset.v);save();break;
+    case "wdone":{const d=b.dataset.d,p=ensurePlan(d);
+      if(p.workoutDone)undoWorkout(d,p);
+      else if(p.workout==="uszas"||p.workout==="torna"){const m=workoutMins(p);
+        S.log[d]=S.log[d]||{};S.log[d].edzes=(S.log[d].edzes||0)+m;p.workoutDone=true;p.workoutCredit=m}
+      save();break}
+    case "badd":{const d=b.dataset.d,p=ensurePlan(d),bl=p.blocks.find(x=>x.id===b.dataset.bid),inp=document.getElementById("bt-"+b.dataset.bid);
+      if(!bl||!inp)return;const title=inp.value.trim();if(!title){inp.focus();return}
+      const dur=Math.max(0,tm(bl.end)-tm(bl.start)),planned=S.tasks.filter(x=>x.date===d&&x.blockId===bl.id).reduce((s,x)=>s+x.plan,0),rem=dur-planned;
+      const plan=rem>=15?Math.min(rem,+S.settings.focus||50):25;
+      S.tasks.push({id:uid(),date:d,title,mode:(bl.mode&&bl.mode!=="edzes")?bl.mode:"munka",plan,done:0,star:false,completed:false,postponed:0,blockId:bl.id});save();break}
+    case "baddblock":{const sc=b.dataset.s,bl=getBlocks(sc),kind=b.dataset.k==="edzes";
+      const last=bl.length?tm(bl[bl.length-1].end):9*60,st=Math.min(last,22*60);
+      bl.push(kind?blk(hm(st),hm(st+60),"Edzés","edzes","edzes"):blk(hm(st),hm(st+60),"Új sáv",""));sortBlocks(bl);save();break}
+    case "bdel":{const sc=b.dataset.s,bl=getBlocks(sc),i=bl.findIndex(x=>x.id===b.dataset.bid);
+      if(i>=0){bl.splice(i,1);S.tasks.forEach(x=>{if(x.blockId===b.dataset.bid)x.blockId=null});save()}break}
+    case "dayreset":if(!confirmDay){confirmDay=true;break}
+      {const d=pDate,old=S.plan[d];if(old)undoWorkout(d,old);
+       S.tasks.forEach(x=>{if(x.date===d)x.blockId=null});delete S.plan[d];ensurePlan(d);confirmDay=false;save();break}
+    case "review":{const d=today(),r=S.reviews[d]||{};
+      r.good=document.getElementById("r-good").value.trim();r.slip=document.getElementById("r-slip").value.trim();
+      const first=document.getElementById("r-first").value.trim();const tmw=ymd(addDays(new Date(),1));
+      if(first){const ex=r.taskId&&find(r.taskId);
+        if(ex){ex.title=first;ex.mode=formMode}
+        else{const id=uid();const full=S.tasks.filter(x=>x.date===tmw&&x.star).length>=3;
+          S.tasks.push({id,date:tmw,title:first,mode:formMode,plan:+S.settings.focus||50,done:0,star:!full,completed:false,postponed:0,blockId:null});r.taskId=id}}
+      r.first=first;S.reviews[d]=r;flash="Visszatekintés mentve."+(first?" A holnapi első feladat bekerült a holnapi listába.":"");save();break}
+    case "reset":if(!confirmReset){confirmReset=true;break}
+      S=defaults();S.updatedAt=Date.now();confirmReset=false;save();view="ma";break;
+  }
+  render()});
+document.addEventListener("change",e=>{const i=e.target,ds=i.dataset||{};
+  if(ds.set){const v=+String(i.value).replace(",",".");
+    if(ds.set==="target"){const T=S.settings.targets[ds.k];if(T)T[ds.t]=Math.min(100,Math.max(0,isFinite(v)?v:0))}
+    if(ds.set==="focus")S.settings.focus=Math.min(180,Math.max(5,Math.round(v)||50));
+    if(ds.set==="brk")S.settings.brk=Math.min(60,Math.max(1,Math.round(v)||10));
+    if(ds.set==="travel")S.settings.travel=Math.min(120,Math.max(0,isFinite(v)?Math.round(v):20));
+    save()}
+  else if(ds.assign){const t=find(ds.assign);if(t){t.blockId=i.value||null;save()}}
+  else if(ds.bf){const bl=getBlocks(ds.bs),b=bl.find(x=>x.id===ds.bid);
+    if(b){const f=ds.bf;
+      if(f==="title")b.title=i.value.trim()||"Sáv";
+      else if(f==="mode")b.mode=i.value;
+      else{b[f]=i.value;
+        if(!/^\d\d:\d\d$/.test(b.start))b.start="09:00";
+        if(!/^\d\d:\d\d$/.test(b.end))b.end=hm(tm(b.start)+60);
+        if(tm(b.end)<=tm(b.start))b.end=hm(Math.min(1439,tm(b.start)+60));
+        sortBlocks(bl)}
+      save()}}
+  render()});
+document.addEventListener("input",e=>{if(e.target.id==="f-plan"&&e.target.value){formPlan=+e.target.value||50;
+  document.querySelectorAll('[data-act="fplan"]').forEach(x=>x.setAttribute("aria-pressed","false"))}});
+document.addEventListener("keydown",e=>{if(e.key!=="Enter")return;const id=e.target.id||"";
+  if(id==="f-title"){const b=document.querySelector('[data-act="add"]');if(b)b.click()}
+  else if(id.indexOf("bt-")===0){const b=e.target.parentNode.querySelector("button");if(b)b.click()}});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)render()});
+render();
+</script>
+</body>
+</html>
