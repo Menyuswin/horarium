@@ -157,6 +157,7 @@ const DAYS=["H","K","Sze","Cs","P","Szo","V"];
 const MONTHS=["január","február","március","április","május","június","július","augusztus","szeptember","október","november","december"];
 const DAYNAMES=["vasárnap","hétfő","kedd","szerda","csütörtök","péntek","szombat"];
 const WORKOUTS={uszas:"Úszás",torna:"Torna",nincs:"Pihenőnap"};
+const MAX_FOCUS_BLOCKS=6;
 const BREAK_TIPS=["Álljon fel, és nyújtózzon két percet.","Igyon egy pohár vizet.","Nézzen ki az ablakon húsz másodpercig.","Menjen ki a szobából, és járjon egy kört.","Ne nyissa meg a telefont és a közösségi oldalakat: a szünet pihenés legyen.","Lazítsa el a vállát, és lassan lélegezzen néhányat."];
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
@@ -355,6 +356,7 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
   const beh=weekStatus().filter(x=>x.behind);
   if(beh.length&&isToday)h+='<div class="alert"><strong>Heti elmaradás:</strong> '+beh.map(x=>MODES[x.k].toLowerCase()+" ("+fh(x.done)+" a "+fh(x.target)+"-ból)").join(", ")+
     '. <button data-act="tab" data-v="het" style="text-decoration:underline">Részletek a heti nézetben</button></div>';
+  if(tasks.length>MAX_FOCUS_BLOCKS)h+='<div class="alert"><strong>'+tasks.length+' fókuszblokk van beosztva erre a napra.</strong> Több mint '+MAX_FOCUS_BLOCKS+' már túlterhelés. Érdemes néhányat másik napra tenni, vagy törölni.</div>';
   if(S.timer){const t=S.timer,task=find(t.taskId),c=task?task.mode:"munka",focus=t.phase==="focus";
     h+='<div class="panel timer" style="--c:var(--'+c+')"><svg viewBox="0 0 128 128" role="img" aria-label="Időmérő">'+
       '<circle cx="64" cy="64" r="54" fill="none" stroke="var(--soft)" stroke-width="9"/>'+
