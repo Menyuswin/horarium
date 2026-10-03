@@ -157,6 +157,7 @@ const DAYS=["H","K","Sze","Cs","P","Szo","V"];
 const MONTHS=["január","február","március","április","május","június","július","augusztus","szeptember","október","november","december"];
 const DAYNAMES=["vasárnap","hétfő","kedd","szerda","csütörtök","péntek","szombat"];
 const WORKOUTS={uszas:"Úszás",torna:"Torna",nincs:"Pihenőnap"};
+const BREAK_TIPS=["Álljon fel, és nyújtózzon két percet.","Igyon egy pohár vizet.","Nézzen ki az ablakon húsz másodpercig.","Menjen ki a szobából, és járjon egy kört.","Ne nyissa meg a telefont és a közösségi oldalakat: a szünet pihenés legyen.","Lazítsa el a vállát, és lassan lélegezzen néhányat."];
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function blk(start,end,title,mode,kind){const b={id:uid(),start,end,title,mode:mode||""};if(kind)b.kind=kind;return b}
@@ -170,7 +171,7 @@ function defTemplates(){return{
 function defTargets(){return{tanulas:{wd:5,we:2},munka:{wd:30,we:0},szabad:{wd:7,we:6},pihenes:{wd:15,we:8},edzes:{wd:5,we:2}}}
 function defaults(){return{v:2,updatedAt:0,
   settings:{targets:defTargets(),focus:50,brk:10,travel:20,templates:defTemplates()},
-  tasks:[],log:{},reviews:{},timer:null,plan:{}}}
+  tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{}}}
 function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=d.settings||{};
   const s=Object.assign(b,d);s.v=2;
   s.settings=Object.assign(b.settings,ds);
@@ -179,7 +180,7 @@ function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=
   s.settings.targets=tg;
   const tp=ds.templates;
   s.settings.templates=(tp&&Array.isArray(tp.wd)&&Array.isArray(tp.we))?tp:defTemplates();
-  s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};return s}
+  s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.hourLog=d.hourLog||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};return s}
 
 let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,confirmReset=false,confirmDay=false,
     flash="",syncOn=false,pDate=null,editPlan=false;
@@ -208,6 +209,7 @@ function save(){S.updatedAt=Date.now();
   const cut=ymd(addDays(new Date(),-90));
   S.tasks=S.tasks.filter(t=>t.date>=cut||!t.completed&&t.date>=ymd(addDays(new Date(),-120)));
   for(const k of Object.keys(S.log))if(k<cut)delete S.log[k];
+  for(const k of Object.keys(S.hourLog))if(k<cut)delete S.hourLog[k];
   for(const k of Object.keys(S.plan))if(k<cut)delete S.plan[k];
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
   if(dbDoc){dbDirty=true;clearTimeout(dbTimer);dbTimer=setTimeout(pushDb,900)}}
@@ -252,6 +254,8 @@ function workoutMins(p){const b=p.blocks.find(x=>x.kind==="edzes");return b?Math
 function find(id){return S.tasks.find(t=>t.id===id)}
 function credit(t,min,date){if(min<=0)return;t.done=(t.done||0)+min;const d=date||today();
   S.log[d]=S.log[d]||{};S.log[d][t.mode]=(S.log[d][t.mode]||0)+min}
+function hourCredit(min,when){if(min<=0)return;const d=ymd(when),h=when.getHours();
+  S.hourLog[d]=S.hourLog[d]||{};S.hourLog[d][h]=(S.hourLog[d][h]||0)+min}
 function uncredit(mode,min,date){if(S.log[date]){S.log[date][mode]=Math.max(0,(S.log[date][mode]||0)-min)}}
 function weekTotals(){const w=weekDates(),o={};MK.forEach(k=>o[k]=0);
   w.forEach(d=>{const l=S.log[d];if(l)MK.forEach(k=>o[k]+=l[k]||0)});return o}
@@ -278,11 +282,11 @@ function startTimer(id){try{actx=actx||new (window.AudioContext||window.webkitAu
   S.timer={taskId:id,phase:"focus",startAt:Date.now(),durMs:(+S.settings.focus||50)*60000};save();render()}
 function stopTimer(silent){const t=S.timer;if(!t)return;
   if(t.phase==="focus"){const el=Math.min(Date.now()-t.startAt,t.durMs),m=Math.round(el/60000),task=find(t.taskId);
-    if(task&&m>=1)credit(task,m)}
+    if(task&&m>=1){credit(task,m);hourCredit(m,new Date(t.startAt))}}
   S.timer=null;document.title="Horárium – napi fókusz";if(!silent){save();render()}}
 function tick(){const t=S.timer;if(!t)return;const now=Date.now(),end=t.startAt+t.durMs;
   if(now>=end){
-    if(t.phase==="focus"){const task=find(t.taskId);if(task)credit(task,Math.round(t.durMs/60000),ymd(new Date(end)));
+    if(t.phase==="focus"){const task=find(t.taskId);if(task){credit(task,Math.round(t.durMs/60000),ymd(new Date(end)));hourCredit(Math.round(t.durMs/60000),new Date(t.startAt))}
       S.timer={taskId:t.taskId,phase:"break",startAt:end,durMs:(+S.settings.brk||10)*60000};beep();save();render();return tick()}
     S.timer=null;document.title="Horárium – napi fókusz";beep();save();render();return}
   const rem=Math.ceil((end-now)/1000),txt=String(Math.floor(rem/60)).padStart(2,"0")+":"+String(rem%60).padStart(2,"0");
@@ -335,6 +339,8 @@ function nowPanel(){const d=today(),p=ensurePlan(d),items=dayItems(d).filter(x=>
   let h='<div class="panel" style="margin-bottom:14px"><h3>A napirendből</h3>'+
     '<p style="margin-top:6px">'+(cur?'<b>Most:</b> '+hm(cur.s)+"–"+hm(cur.e)+" "+esc(cur.b.title):'<span class="muted">Most nincs sáv.</span>')+'</p>'+
     (nxt?'<p class="muted">Következő: '+hm(nxt.s)+"–"+hm(nxt.e)+" "+esc(nxt.b.title)+'</p>':"");
+  const open=x=>x&&items.length&&S.tasks.find(t=>t.date===d&&t.blockId===x.b.id&&!t.completed),cand=open(cur)||open(nxt);
+  if(cand&&!S.timer)h+='<p style="margin-top:8px"><button class="btn sm" data-act="start" data-id="'+cand.id+'">▶ Indítás: '+esc(cand.title)+'</button></p>';
   if(p.blocks.some(b=>b.kind==="edzes")){
     h+='<p style="margin:10px 0 6px"><b>Edzés ma:</b> '+(p.workout?WORKOUTS[p.workout]+(p.workoutDone?", megvolt":""):'<span class="muted">még nincs kiválasztva</span>')+'</p>'+workoutSeg(d,p.workout)}
   return h+'<p style="margin-top:10px"><button data-act="gonap" style="text-decoration:underline">Teljes napirend megnyitása</button></p></div>'}
@@ -354,7 +360,7 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
       '<circle cx="64" cy="64" r="54" fill="none" stroke="var(--soft)" stroke-width="9"/>'+
       '<circle id="t-ring" cx="64" cy="64" r="54" fill="none" stroke="'+(focus?"var(--c)":"var(--muted)")+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="339.29" stroke-dashoffset="339.29" transform="rotate(-90 64 64)"/>'+
       '<text id="t-time" class="time" x="64" y="73" text-anchor="middle">–</text></svg>'+
-      '<div class="info"><p class="muted small">'+(focus?"Fókuszblokk":"Szünet – álljon fel a géptől")+'</p><h3 style="margin-bottom:10px">'+esc(task?task.title:"")+'</h3>'+
+      '<div class="info"><p class="muted small">'+(focus?"Fókuszblokk":"Szünet. "+BREAK_TIPS[Math.floor(t.startAt/60000)%BREAK_TIPS.length])+'</p><h3 style="margin-bottom:10px">'+esc(task?task.title:"")+'</h3>'+
       '<button class="btn sm" data-act="stop">'+(focus?"Befejezem a blokkot":"Szünet kihagyása")+'</button></div></div>'}
   if(isToday)h+=nowPanel();
   h+='<div class="row" style="justify-content:space-between"><div class="days" role="group" aria-label="Nap">'+
@@ -444,6 +450,14 @@ function viewHet(){const w=weekDates(),st=weekStatus();
   svg+='<line x1="8" y1="120.5" x2="312" y2="120.5" stroke="var(--line)"/></svg>';
   h+='<h2>Napi ráfordítás (óra)</h2><div class="panel">'+svg+'<div class="legend" style="margin-top:6px">'+MK.map(k=>'<span><b style="background:var(--'+k+')"></b>'+MODES[k]+'</span>').join("")+'</div></div>';
   const wt=S.tasks.filter(t=>w.includes(t.date)),pl=wt.reduce((a,t)=>a+t.plan,0),dn=wt.reduce((a,t)=>a+(t.done||0),0);
+  const cut28=ymd(addDays(new Date(),-27)),hb={reggel:0,delutan:0,este:0};
+  Object.keys(S.hourLog).filter(d=>d>=cut28).forEach(d=>Object.keys(S.hourLog[d]).forEach(hr=>{const x=+hr,m=S.hourLog[d][hr],k=x>=5&&x<=11?"reggel":x>=12&&x<=16?"delutan":"este";hb[k]+=m}));
+  const ht=hb.reggel+hb.delutan+hb.este,lab={reggel:"Reggel (5–11)",delutan:"Délután (12–16)",este:"Este és éjjel (17–4)"};
+  h+='<h2>Mikor dolgozik a legjobban</h2><div class="panel">';
+  if(ht<60)h+='<p class="muted">Az elmúlt 4 hétből még kevés adat van ('+fm(ht)+' fókusz). Néhány fókuszblokk után itt látszik a mintázat.</p>';
+  else{const best=Object.keys(hb).sort((a,b)=>hb[b]-hb[a])[0];
+    h+='<p style="margin-bottom:8px">A fókuszidő legnagyobb része: <b>'+lab[best]+'</b>.</p>'+Object.keys(hb).map(k=>'<div class="wk" style="--c:var(--munka)"><div class="lab"><span>'+lab[k]+'</span><span>'+Math.round(hb[k]/ht*100)+'%</span></div><div class="bar"><i style="width:'+(hb[k]/ht*100)+'%"></i></div></div>').join("")}
+  h+='</div>';
   h+='<h2>Terv és valóság</h2><div class="panel"><p>A héten '+fm(pl)+' munkát tervezett feladatokba, ebből '+fm(dn)+' valósult meg'+(pl?" ("+Math.round(dn/pl*100)+"%)":"")+'. '+wt.filter(t=>t.completed).length+' feladat készült el a '+wt.length+'-ból.</p></div>';
   const late=S.tasks.filter(t=>!t.completed&&(t.postponed||0)>=2).sort((a,b)=>b.postponed-a.postponed);
   h+='<h2>Halasztott feladatok</h2>'+(late.length?'<ul class="tasks">'+late.map(t=>'<li class="task" style="--c:var(--'+t.mode+')"><div class="top" style="padding:10px 12px"><span class="body"><span class="title">'+esc(t.title)+'</span><span class="meta"><span class="'+(t.postponed>=3?"late":"")+'">'+t.postponed+'× halasztva</span>, '+MODES[t.mode].toLowerCase()+", "+fm(t.plan)+'</span></span></div></li>').join("")+'</ul>'
@@ -478,6 +492,7 @@ function viewBeall(){const s=S.settings,T=s.targets;
   h+='<h2>Hétvégi napirend-sablon</h2><div class="panel">'+blockRows(s.templates.we,"we")+addBlockBtns("we")+
     '<p class="muted small" style="margin-top:8px">A sablon az újonnan megnyitott napokra érvényes. Egy konkrét nap sávjait a Napirend nézetben módosíthatja.</p></div>';
   h+='<h2>Edzés és fókuszritmus</h2><div class="panel"><div class="grid2"><label class="field"><span>Út az uszodába (perc, egy irány)</span><input type="number" min="0" max="120" step="5" inputmode="numeric" data-set="travel" value="'+s.travel+'"></label><span></span>'+
+    '<div class="row chips" role="group" aria-label="Fókusz-ritmus" style="margin-bottom:12px">'+[[25,5,"Gyors: 25/5"],[50,10,"Mély: 50/10"]].map(p=>'<button data-act="preset" data-f="'+p[0]+'" data-b="'+p[1]+'" aria-pressed="'+(s.focus===p[0]&&s.brk===p[1])+'">'+p[2]+'</button>').join("")+'</div>'+
     '<label class="field"><span>Fókuszblokk (perc)</span><input type="number" min="5" max="180" step="5" inputmode="numeric" data-set="focus" value="'+s.focus+'"></label>'+
     '<label class="field"><span>Szünet (perc)</span><input type="number" min="1" max="60" inputmode="numeric" data-set="brk" value="'+s.brk+'"></label></div>'+
     '<p class="muted small">A blokk végén hangjelzés szól, ha az alkalmazás nyitva van.</p></div>';
@@ -533,6 +548,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "drop":{const st=stale();S.tasks=S.tasks.filter(x=>!st.includes(x));save();break}
     case "pday":pDate=b.dataset.d;openId=null;editPlan=false;confirmDay=false;break;
     case "pedit":editPlan=!editPlan;break;
+    case "preset":S.settings.focus=+b.dataset.f;S.settings.brk=+b.dataset.b;save();break;
     case "wset":setWorkout(b.dataset.d,b.dataset.v);save();break;
     case "wdone":{const d=b.dataset.d,p=ensurePlan(d);
       if(p.workoutDone)undoWorkout(d,p);
