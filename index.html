@@ -372,7 +372,14 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
   if(tasks.length){const by={};MK.forEach(k=>by[k]=tasks.filter(t=>t.mode===k).reduce((a,t)=>a+t.plan,0));
     h+='<div class="strip" aria-hidden="true">'+MK.map(k=>by[k]?'<i style="width:'+(by[k]/plan*100)+'%;background:var(--'+k+')"></i>':"").join("")+'</div>'+
     '<div class="legend">'+MK.filter(k=>by[k]).map(k=>'<span><b style="background:var(--'+k+')"></b>'+MODES[k]+" "+fm(by[k])+'</span>').join("")+'</div>'}
-  const stars=tasks.filter(t=>t.star),rest=tasks.filter(t=>!t.star);
+  const work=tasks.filter(t=>t.mode==="munka"),personal=tasks.filter(t=>t.mode!=="munka");
+  const stars=personal.filter(t=>t.star),rest=personal.filter(t=>!t.star);
+  const wk=weekStatus().find(x=>x.k==="munka"),wp=work.reduce((a,t)=>a+t.plan,0),wd=work.reduce((a,t)=>a+(t.done||0),0);
+  if(isToday||work.length){
+    h+='<h2>Munka</h2><div class="panel" style="--c:var(--munka);margin-bottom:8px"><div class="lab" style="display:flex;justify-content:space-between;gap:8px"><b style="color:var(--munka)">Ma</b><span class="small">'+(work.length?fm(wd)+" kész a "+fm(wp)+"-ból":"nincs munka-feladat")+'</span></div>'+
+      (wk&&wk.target?'<p class="small muted" style="margin-top:6px">A héten '+fh(wk.done)+" / "+fh(wk.target)+" munka"+(wk.done>=wk.target?", a heti cél teljesült.":", a hátralévő "+wk.left+" napra napi "+fh(wk.perDay)+" jut.")+'</p>':"")+'</div>'+
+      (work.length?'<ul class="tasks">'+work.map(t=>taskHtml(t,isToday)).join("")+'</ul>':'<p class="muted small" style="margin-bottom:12px">Munka-feladat felvételéhez válassza lent a Munka módot.</p>');
+  }
   h+='<h2>A nap három legfontosabbja</h2><ul class="tasks">'+stars.map(t=>taskHtml(t,isToday)).join("")+'</ul>';
   for(let i=stars.length;i<3;i++)h+='<div class="slot">'+(tasks.length?"Szabad hely – nyissa meg a feladatot, és emelje ide.":"Vegyen fel feladatot alább vagy a napirendben, majd emelje ide a legfontosabbakat.")+'</div>';
   if(rest.length)h+='<h2>További feladatok</h2><ul class="tasks">'+rest.map(t=>taskHtml(t,isToday)).join("")+'</ul>';
@@ -540,7 +547,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "stop":stopTimer();return;
     case "plan":if(!t)return;t.plan=Math.min(600,Math.max(5,t.plan+(+b.dataset.d)));save();break;
     case "star":if(!t)return;
-      if(!t.star&&S.tasks.filter(x=>x.date===t.date&&x.star).length>=3){flash="Már három feladat van kiemelve. Előbb vegyen ki egyet – a három éppen attól ér valamit, hogy csak három.";break}
+      if(t.mode==="munka"){flash="A munka-feladatok külön szakaszban vannak, a három legfontosabb közé nem kerülhetnek.";break}
+      if(!t.star&&S.tasks.filter(x=>x.date===t.date&&x.star&&x.mode!=="munka").length>=3){flash="Már három feladat van kiemelve. Előbb vegyen ki egyet – a három éppen attól ér valamit, hogy csak három.";break}
       t.star=!t.star;save();break;
     case "postpone":if(!t)return;if(S.timer&&S.timer.taskId===t.id)stopTimer(true);
       t.date=ymd(addDays(new Date(),1));t.postponed=(t.postponed||0)+1;t.star=false;t.blockId=null;openId=null;
