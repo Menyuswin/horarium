@@ -166,8 +166,8 @@ function defTemplates(){return{
   wd:[blk("07:00","08:00","Tanulás","tanulas"),blk("08:00","09:00","Reggeli, készülődés","pihenes"),
       blk("09:00","12:30","Munka","munka"),blk("12:30","13:30","Ebéd","pihenes"),blk("13:30","16:30","Munka","munka"),
       blk("17:00","18:00","Edzés","edzes","edzes"),blk("18:30","20:00","Szabadprogram","szabad"),blk("20:00","22:00","Esti pihenés","pihenes")],
-  we:[blk("08:00","09:30","Reggeli, lassú indulás","pihenes"),blk("09:30","11:30","Tanulás","tanulas"),
-      blk("12:00","13:00","Edzés","edzes","edzes"),blk("13:30","14:30","Ebéd","pihenes"),
+  we:[blk("07:30","08:30","Reggeli, lassú indulás","pihenes"),blk("08:30","10:30","Tanulás","tanulas"),
+      blk("11:00","12:00","Edzés","edzes","edzes"),blk("12:30","13:30","Ebéd","pihenes"),
       blk("14:30","18:30","Szabadprogram","szabad"),blk("19:00","22:00","Esti pihenés","pihenes")]}}
 function defTargets(){return{tanulas:{wd:5,we:2},munka:{wd:30,we:0},szabad:{wd:7,we:6},pihenes:{wd:15,we:8},edzes:{wd:5,we:2}}}
 function defaults(){return{v:2,updatedAt:0,
