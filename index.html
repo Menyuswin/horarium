@@ -297,6 +297,18 @@ function alertsDue(){const now=Date.now(),from=Math.max(alertStamp,now-30000);al
   beep();msgs.forEach(x=>notify(x.title,x.body));
   flash=msgs.map(x=>x.title).join(" · ");render()}
 setInterval(alertsDue,15000);
+/* Countdowns: time left in the current schedule block, and in the running task's plan. */
+function clock(sec){sec=Math.max(0,Math.ceil(sec));return String(Math.floor(sec/3600)).padStart(2,"0")+":"+String(Math.floor(sec%3600/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")}
+function countdown(){const now=Date.now();
+  const cdNow=document.getElementById("cd-now");
+  if(cdNow){const d=today(),p=S.plan[d];
+    const n=new Date(),nm=n.getHours()*60+n.getMinutes(),cur=p&&p.blocks.find(b=>!(b.kind==="edzes"&&p.workout==="nincs")&&tm(b.start)<=nm&&nm<tm(b.end));
+    if(cur)cdNow.textContent=clock((parseD(d).getTime()+tm(cur.end)*60000-now)/1000)}
+  const cdTask=document.getElementById("cd-task");
+  if(cdTask&&S.timer){const t=S.timer,task=find(t.taskId);
+    if(task){const elapsed=t.phase==="focus"?Math.min(now-t.startAt,t.durMs)/1000:0;
+      cdTask.textContent=clock((task.plan-(task.done||0))*60-elapsed)}}}
+setInterval(countdown,1000);
 function startTimer(id){ensureAudio();
   if(S.timer)stopTimer(true);
   S.timer={taskId:id,phase:"focus",startAt:Date.now(),durMs:(+S.settings.focus||50)*60000};save();render()}
@@ -358,6 +370,7 @@ function nowPanel(){const d=today(),p=ensurePlan(d),items=dayItems(d).filter(x=>
   const n=new Date(),nm=n.getHours()*60+n.getMinutes(),cur=items.find(x=>x.s<=nm&&nm<x.e),nxt=items.find(x=>x.s>nm);
   let h='<div class="panel" style="margin-bottom:14px"><h3>A napirendből</h3>'+
     '<p style="margin-top:6px">'+(cur?'<b>Most:</b> '+hm(cur.s)+"–"+hm(cur.e)+" "+esc(cur.b.title):'<span class="muted">Most nincs sáv.</span>')+'</p>'+
+    (cur?'<p class="muted">Hátra a sávból: <b id="cd-now" style="font-variant-numeric:tabular-nums"></b></p>':"")+
     (nxt?'<p class="muted">Következő: '+hm(nxt.s)+"–"+hm(nxt.e)+" "+esc(nxt.b.title)+'</p>':"");
   const open=x=>x&&items.length&&S.tasks.find(t=>t.date===d&&t.blockId===x.b.id&&!t.completed),cand=open(cur)||open(nxt);
   if(cand&&!S.timer)h+='<p style="margin-top:8px"><button class="btn sm" data-act="start" data-id="'+cand.id+'">▶ Indítás: '+esc(cand.title)+'</button></p>';
@@ -382,6 +395,7 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
       '<circle id="t-ring" cx="64" cy="64" r="54" fill="none" stroke="'+(focus?"var(--c)":"var(--muted)")+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="339.29" stroke-dashoffset="339.29" transform="rotate(-90 64 64)"/>'+
       '<text id="t-time" class="time" x="64" y="73" text-anchor="middle">–</text></svg>'+
       '<div class="info"><p class="muted small">'+(focus?"Fókuszblokk":"Szünet. "+BREAK_TIPS[Math.floor(t.startAt/60000)%BREAK_TIPS.length])+'</p><h3 style="margin-bottom:10px">'+esc(task?task.title:"")+'</h3>'+
+      (task?'<p class="small" style="margin-bottom:10px">Hátra a feladatból: <b id="cd-task" style="font-variant-numeric:tabular-nums"></b> <span class="muted">(tervezve '+fm(task.plan)+')</span></p>':"")+
       '<button class="btn sm" data-act="stop">'+(focus?"Befejezem a blokkot":"Szünet kihagyása")+'</button></div></div>'}
   if(isToday)h+=nowPanel();
   h+='<div class="row" style="justify-content:space-between"><div class="days" role="group" aria-label="Nap">'+
@@ -535,7 +549,7 @@ function render(){const beh=weekStatus().some(x=>x.behind);
   document.getElementById("tabs").innerHTML=[["ma","Ma"],["nap","Napirend"],["het","Hét"],["este","Este"],["beall","Beállítás"]].map(a=>
     '<button data-act="tab" data-v="'+a[0]+'"'+(view===a[0]?' aria-current="page"':"")+'>'+a[1]+(a[0]==="het"&&beh?'<span class="dot" aria-label="elmaradás"></span>':"")+(a[0]==="ma"&&S.timer&&view!=="ma"?'<span class="dot" style="background:var(--ok)" aria-label="fut az időmérő"></span>':"")+'</button>').join("");
   document.getElementById("app").innerHTML=({ma:viewMa,nap:viewNapirend,het:viewHet,este:viewEste,beall:viewBeall})[view]();
-  tick()}
+  tick();countdown()}
 
 /* ---------- events ---------- */
 function setWorkout(d,v){const p=ensurePlan(d);
