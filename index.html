@@ -184,7 +184,12 @@ function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=
   s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.hourLog=d.hourLog||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};return s}
 
 let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,confirmReset=false,confirmDay=false,
-    flash="",syncOn=false,pDate=null,editPlan=false;
+    flash="",syncOn=false,pDate=null,editPlan=false,editId=null,editMode="munka";
+/* Edit form for a task that is already on a day. Shown in place of its action row. */
+function taskForm(t){return '<div class="panel" style="margin-top:4px"><label class="field"><span class="small">Cím</span><input type="text" id="e-title" maxlength="120" value="'+esc(t.title)+'" autocomplete="off"></label>'+
+  '<div class="modes" role="group" aria-label="Mód">'+MK.filter(k=>k!=="edzes").map(k=>'<button data-act="emode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(editMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
+  '<label class="field"><span class="small">Tervezett idő (perc)</span><input type="number" id="e-plan" min="5" max="600" step="5" inputmode="numeric" value="'+t.plan+'"></label>'+
+  '<div class="row"><button class="btn sm" data-act="esave" data-id="'+t.id+'">Mentés</button><button class="btn ghost sm" data-act="ecancel">Mégse</button></div></div>'}
 try{const raw=localStorage.getItem(KEY);if(raw)S=normalize(JSON.parse(raw))}catch(e){}
 
 /* ---------- dates & time ---------- */
@@ -342,7 +347,7 @@ function taskHtml(t,isToday){const run=S.timer&&S.timer.taskId===t.id&&S.timer.p
     if(late&&!t.completed)h+='<p class="small late" style="margin-bottom:8px">Harmadszor is elhalasztotta. Érdemes dönteni: bontsa kisebbre, tegye fix időpontra, vagy törölje.</p>';
     h+='<label class="field"><span class="small">Napirendi sáv</span><select data-assign="'+t.id+'"><option value="">Nincs sávhoz rendelve</option>'+
       bl.map(b=>'<option value="'+b.id+'"'+(t.blockId===b.id?" selected":"")+'>'+b.start+"–"+b.end+" "+esc(b.title)+'</option>').join("")+'</select></label>';
-    h+='<div class="row"><button class="btn ghost sm" data-act="plan" data-d="-10" data-id="'+t.id+'">− 10 p</button>'+
+    h+=editId===t.id?taskForm(t):'<div class="row"><button class="btn ghost sm" data-act="edit" data-id="'+t.id+'">Szerkesztés</button><button class="btn ghost sm" data-act="plan" data-d="-10" data-id="'+t.id+'">− 10 p</button>'+
     '<button class="btn ghost sm" data-act="plan" data-d="10" data-id="'+t.id+'">+ 10 p</button>'+
     '<button class="btn ghost sm" data-act="star" data-id="'+t.id+'">'+(t.star?"Kiemelés törlése":"A három közé")+'</button>'+
     (isToday&&!t.completed?'<button class="btn ghost sm" data-act="postpone" data-id="'+t.id+'">Holnapra</button>':"")+
@@ -566,6 +571,14 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "gonap":view="nap";pDate=today();openId=null;editPlan=false;window.scrollTo(0,0);break;
     case "day":dayOff=+b.dataset.o;openId=null;break;
     case "open":openId=openId===b.dataset.id?null:b.dataset.id;break;
+    case "edit":editId=t.id;editMode=t.mode;break;
+    case "ecancel":editId=null;break;
+    case "emode":{editMode=b.dataset.k;document.querySelectorAll('[data-act="emode"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===editMode));return}
+    case "esave":{if(!t)return;const ti=document.getElementById("e-title"),pi=document.getElementById("e-plan"),title=ti.value.trim();
+      if(!title){ti.focus();return}
+      t.title=title;t.mode=editMode;t.plan=Math.min(600,Math.max(5,Math.round(+pi.value||t.plan)));
+      if(t.mode==="munka")t.star=false;
+      editId=null;save();break}
     case "fmode":{formMode=b.dataset.k;document.querySelectorAll('[data-act="fmode"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===formMode));return}
     case "fplan":{formPlan=+b.dataset.m;const i=document.getElementById("f-plan");if(i)i.value="";
       document.querySelectorAll('[data-act="fplan"]').forEach(x=>x.setAttribute("aria-pressed",+x.dataset.m===formPlan));return}
