@@ -273,12 +273,31 @@ function stale(){const t=today();return S.tasks.filter(x=>x.date<t&&!x.completed
 
 /* ---------- timer ---------- */
 let actx=null;
-function beep(){try{if(!actx)return;[0,.35,.7].forEach((o,i)=>{const os=actx.createOscillator(),g=actx.createGain();
-  os.frequency.value=i===2?880:660;os.connect(g);g.connect(actx.destination);
-  const t=actx.currentTime+o;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.03);
-  g.gain.exponentialRampToValueAtTime(.0001,t+.3);os.start(t);os.stop(t+.32)});
-  if(navigator.vibrate)navigator.vibrate([200,100,200])}catch(e){}}
-function startTimer(id){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}
+/* Three rounds of a rising arpeggio and a high double hit: hard to miss, short enough to repeat. */
+const MELODY=[[523.25,.12],[659.25,.12],[783.99,.12],[1046.5,.18],[0,.08],[1318.5,.12],[1318.5,.25],[0,.2]];
+function ensureAudio(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}}
+function beep(){try{if(!actx)return;let t=actx.currentTime+.05;
+  for(let r=0;r<3;r++)MELODY.forEach(([f,d])=>{if(f){const os=actx.createOscillator(),g=actx.createGain();
+    os.type="square";os.frequency.value=f;os.connect(g);g.connect(actx.destination);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.18,t+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,t+d);os.start(t);os.stop(t+d+.02)}t+=d});
+  if(navigator.vibrate)navigator.vibrate([200,100,200,100,200])}catch(e){}}
+function notify(title,body){try{if("Notification"in window&&Notification.permission==="granted")new Notification(title,{body:body||"",tag:"horarium"})}catch(e){}}
+function askNotify(){try{if("Notification"in window&&Notification.permission==="default")Notification.requestPermission()}catch(e){}}
+/* Sound and notification for schedule blocks that start or end. Runs while the page is open. */
+let alertStamp=Date.now();
+function alertsDue(){const now=Date.now(),from=Math.max(alertStamp,now-30000);alertStamp=now;
+  if(!S.settings.alerts)return;
+  const d=today(),p=S.plan[d];if(!p)return;const base=parseD(d).getTime(),msgs=[];
+  const hit=m=>{const ms=base+m*60000;return ms>from&&ms<=now};
+  p.blocks.forEach(b=>{if(b.kind==="edzes"&&p.workout==="nincs")return;
+    if(hit(tm(b.start)))msgs.push({title:"Indul: "+b.title,body:b.start+"–"+b.end});
+    if(hit(tm(b.end)))msgs.push({title:"Lejárt az idő: "+b.title,body:"Vége: "+b.end})});
+  if(!msgs.length)return;
+  beep();msgs.forEach(x=>notify(x.title,x.body));
+  flash=msgs.map(x=>x.title).join(" · ");render()}
+setInterval(alertsDue,15000);
+function startTimer(id){ensureAudio();
   if(S.timer)stopTimer(true);
   S.timer={taskId:id,phase:"focus",startAt:Date.now(),durMs:(+S.settings.focus||50)*60000};save();render()}
 function stopTimer(silent){const t=S.timer;if(!t)return;
@@ -288,8 +307,8 @@ function stopTimer(silent){const t=S.timer;if(!t)return;
 function tick(){const t=S.timer;if(!t)return;const now=Date.now(),end=t.startAt+t.durMs;
   if(now>=end){
     if(t.phase==="focus"){const task=find(t.taskId);if(task){credit(task,Math.round(t.durMs/60000),ymd(new Date(end)));hourCredit(Math.round(t.durMs/60000),new Date(t.startAt))}
-      S.timer={taskId:t.taskId,phase:"break",startAt:end,durMs:(+S.settings.brk||10)*60000};beep();save();render();return tick()}
-    S.timer=null;document.title="Horárium – napi fókusz";beep();save();render();return}
+      S.timer={taskId:t.taskId,phase:"break",startAt:end,durMs:(+S.settings.brk||10)*60000};beep();notify("Lejárt a fókuszidő",task?task.title:"Szünet következik");save();render();return tick()}
+    S.timer=null;document.title="Horárium – napi fókusz";beep();notify("Szünet vége","Indulhat a következő blokk.");save();render();return}
   const rem=Math.ceil((end-now)/1000),txt=String(Math.floor(rem/60)).padStart(2,"0")+":"+String(rem%60).padStart(2,"0");
   const el=document.getElementById("t-time"),ring=document.getElementById("t-ring");
   if(el)el.textContent=txt;if(ring)ring.setAttribute("stroke-dashoffset",(339.29*(1-(now-t.startAt)/t.durMs)).toFixed(1));
@@ -505,6 +524,9 @@ function viewBeall(){const s=S.settings,T=s.targets;
     '<label class="field"><span>Fókuszblokk (perc)</span><input type="number" min="5" max="180" step="5" inputmode="numeric" data-set="focus" value="'+s.focus+'"></label>'+
     '<label class="field"><span>Szünet (perc)</span><input type="number" min="1" max="60" inputmode="numeric" data-set="brk" value="'+s.brk+'"></label></div>'+
     '<p class="muted small">A blokk végén hangjelzés szól, ha az alkalmazás nyitva van.</p></div>';
+  h+='<h2>Jelzések</h2><div class="panel"><p style="margin-bottom:10px">'+(S.settings.alerts?"Hang és értesítés jelzi, amikor egy napirendi sáv elkezdődik vagy véget ér, és amikor a fókuszidő lejár.":"Kikapcsolva. Bekapcsolva hang és értesítés jelzi a napirendi sávok kezdését és végét.")+'</p>'+
+    '<button class="btn'+(S.settings.alerts?"":" ghost")+'" data-act="alerts">'+(S.settings.alerts?"Kikapcsolás":"Bekapcsolás")+'</button>'+
+    (S.settings.alerts&&"Notification"in window&&Notification.permission==="denied"?'<p class="muted small" style="margin-top:8px">Az értesítés tiltva van a böngészőben, ezért csak a hang szól.</p>':"")+'</div>';
   h+='<h2>Adatok</h2><div class="panel"><p style="margin-bottom:10px">'+(syncOn?"Az adatai a fiókjához kötve mentődnek, így másik eszközön is ugyanezt látja.":"Az adatai jelenleg ezen az eszközön, ebben a böngészőben mentődnek.")+'</p>'+
     '<button class="btn ghost" data-act="reset">'+(confirmReset?"Biztosan törlöm az összes adatot":"Minden adat törlése")+'</button></div>';
   return h}
@@ -559,6 +581,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "pday":pDate=b.dataset.d;openId=null;editPlan=false;confirmDay=false;break;
     case "pedit":editPlan=!editPlan;break;
     case "preset":S.settings.focus=+b.dataset.f;S.settings.brk=+b.dataset.b;save();break;
+    case "alerts":S.settings.alerts=!S.settings.alerts;if(S.settings.alerts){ensureAudio();askNotify();alertStamp=Date.now()}save();break;
     case "wset":setWorkout(b.dataset.d,b.dataset.v);save();break;
     case "wdone":{const d=b.dataset.d,p=ensurePlan(d);
       if(p.workoutDone)undoWorkout(d,p);
