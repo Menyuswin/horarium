@@ -41,6 +41,15 @@ Read `HANDOFF.md` first: it holds the user's decisions, what is built, the deplo
 - Visual system: borderless cards with soft shadow (`--sh`), one accent (munka teal), mode colours only as small dots, icon + label bottom nav (`NAV_IC`).
 - `render()` rebuilds the view; the click handler at the bottom switches on `data-act`.
 
+## Token economy (the user asked for this)
+
+- Start each new topic in a new session. `HANDOFF.md` and this file carry the history, so a long conversation is never needed: every turn re-sends the whole conversation, which is where most tokens go.
+- Never read `index.html` whole (about 190 KB, roughly 60k tokens). Find the function with `grep -n`, then read only those lines (`sed -n 'A,Bp'` or Read with offset and limit). The structure notes above name the functions.
+- Read only the parts of `HANDOFF.md` and the code that the new task needs. Do not re-read a file after editing it.
+- Run `tests/run.sh` and read only its summary; look at a single test's output only when it fails.
+- Look at screenshots only for visual changes, one or two per change, cropped to the element.
+- Delegate wide searches to a subagent so only its conclusion enters the conversation.
+
 ## Writing rules
 
 - The UI is Hungarian and addresses the user informally ("te": "Vegyél fel…", "Nyisd meg…"). The app speaks as "mi" ("Elmentettük…", "Itt vagyunk"). The tagline is "az idő a Te hasznodra".
