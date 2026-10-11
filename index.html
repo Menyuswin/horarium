@@ -176,7 +176,7 @@ function defTemplates(){return{
 function defTargets(){return{tanulas:{wd:5,we:2},munka:{wd:30,we:0},szabad:{wd:7,we:6},pihenes:{wd:15,we:8},edzes:{wd:5,we:2}}}
 function defaults(){return{v:2,updatedAt:0,
   settings:{targets:defTargets(),focus:50,brk:10,travel:20,templates:defTemplates()},
-  tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{}}}
+  tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{},sessions:[],reflect:null}}
 function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=d.settings||{};
   const s=Object.assign(b,d);s.v=2;
   s.settings=Object.assign(b.settings,ds);
@@ -185,10 +185,10 @@ function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=
   s.settings.targets=tg;
   const tp=ds.templates;
   s.settings.templates=(tp&&Array.isArray(tp.wd)&&Array.isArray(tp.we))?tp:defTemplates();
-  s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.hourLog=d.hourLog||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};return s}
+  s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.hourLog=d.hourLog||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};s.sessions=Array.isArray(d.sessions)?d.sessions:[];s.reflect=d.reflect||null;return s}
 
 let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,confirmReset=false,confirmDay=false,
-    flash="",syncOn=false,pDate=null,editPlan=false,editId=null,editMode="munka";
+    flash="",startFor=null,syncOn=false,pDate=null,editPlan=false,editId=null,editMode="munka";
 /* Edit form for a task that is already on a day. Shown in place of its action row. */
 function taskForm(t){return '<div class="panel" style="margin-top:4px"><label class="field"><span class="small">Cím</span><input type="text" id="e-title" maxlength="120" value="'+esc(t.title)+'" autocomplete="off"></label>'+
   '<div class="modes" role="group" aria-label="Mód">'+MK.filter(k=>k!=="edzes").map(k=>'<button data-act="emode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(editMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
@@ -221,6 +221,7 @@ function save(){S.updatedAt=Date.now();
   for(const k of Object.keys(S.log))if(k<cut)delete S.log[k];
   for(const k of Object.keys(S.hourLog))if(k<cut)delete S.hourLog[k];
   for(const k of Object.keys(S.plan))if(k<cut)delete S.plan[k];
+  const cutMs=addDays(new Date(),-90).getTime();S.sessions=S.sessions.filter(x=>x.start>=cutMs);
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
   if(dbDoc){dbDirty=true;clearTimeout(dbTimer);dbTimer=setTimeout(pushDb,900)}}
 async function pushDb(){if(!dbDoc||dbBusy)return;dbBusy=true;dbDirty=false;
@@ -326,16 +327,23 @@ function countdown(){const now=Date.now();
     if(task){const elapsed=t.phase==="focus"?Math.min(now-t.startAt,t.durMs)/1000:0;
       cdTask.textContent=clock((task.plan-(task.done||0))*60-elapsed)}}}
 setInterval(countdown,1000);
-function startTimer(id){ensureAudio();
+function startTimer(id,intent,doneWhen){ensureAudio();
   if(S.timer)stopTimer(true);
-  S.timer={taskId:id,phase:"focus",startAt:Date.now(),durMs:(+S.settings.focus||50)*60000};save();render()}
+  S.timer={taskId:id,phase:"focus",startAt:Date.now(),durMs:(+S.settings.focus||50)*60000,intent:intent||"",doneWhen:doneWhen||""};save();render()}
+/* One finished focus block becomes one record; the reflection fills in the outcome afterwards. */
+function logSession(t,min,endAt,outcome){if(min<1)return null;const task=find(t.taskId);
+  const x={id:uid(),taskId:t.taskId,title:task?task.title:"",mode:task?task.mode:"",planned:Math.round(t.durMs/60000),actual:min,
+    start:t.startAt,end:endAt,intent:t.intent||"",doneWhen:t.doneWhen||"",outcome:outcome||"",distraction:"",distractions:[]};
+  S.sessions.push(x);return x}
 function stopTimer(silent){const t=S.timer;if(!t)return;
   if(t.phase==="focus"){const el=Math.min(Date.now()-t.startAt,t.durMs),m=Math.round(el/60000),task=find(t.taskId);
-    if(task&&m>=1){credit(task,m);hourCredit(m,new Date(t.startAt))}}
+    if(task&&m>=1){credit(task,m);hourCredit(m,new Date(t.startAt))}
+    const x=logSession(t,m,t.startAt+el);if(x&&!silent)S.reflect=x.id}
   S.timer=null;document.title="Horárium – napi fókusz";if(!silent){save();render()}}
 function tick(){const t=S.timer;if(!t)return;const now=Date.now(),end=t.startAt+t.durMs;
   if(now>=end){
     if(t.phase==="focus"){const task=find(t.taskId);if(task){credit(task,Math.round(t.durMs/60000),ymd(new Date(end)));hourCredit(Math.round(t.durMs/60000),new Date(t.startAt))}
+      const x=logSession(t,Math.round(t.durMs/60000),end);if(x)S.reflect=x.id;
       S.timer={taskId:t.taskId,phase:"break",startAt:end,durMs:(+S.settings.brk||10)*60000};beep();notify("Lejárt a fókuszidő",task?task.title:"Szünet következik");save();render();return tick()}
     S.timer=null;document.title="Horárium – napi fókusz";beep();notify("Szünet vége","Indulhat a következő blokk.");save();render();return}
   const rem=Math.ceil((end-now)/1000),txt=String(Math.floor(rem/60)).padStart(2,"0")+":"+String(rem%60).padStart(2,"0");
@@ -410,12 +418,23 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
   if(beh.length&&isToday)h+='<div class="alert"><strong>Heti elmaradás:</strong> '+beh.map(x=>MODES[x.k].toLowerCase()+" ("+fh(x.done)+" a "+fh(x.target)+"-ból)").join(", ")+
     '. <button data-act="tab" data-v="het" style="text-decoration:underline">Részletek a heti nézetben</button></div>';
   if(tasks.length>MAX_FOCUS_BLOCKS)h+='<div class="alert"><strong>'+tasks.length+' fókuszblokk van beosztva erre a napra.</strong> Több mint '+MAX_FOCUS_BLOCKS+' már túlterhelés. Érdemes néhányat másik napra tenni, vagy törölni.</div>';
+  const rs=S.reflect&&S.sessions.find(y=>y.id===S.reflect);
+  if(rs)h+='<div class="panel" style="margin-bottom:14px"><p class="muted small">Lezárt blokk: '+esc(rs.title)+', '+fm(rs.actual)+'</p><h3 style="margin:4px 0 8px">Hogyan sikerült?</h3>'+
+    (rs.intent?'<p class="small"><b>Szándék:</b> '+esc(rs.intent)+'</p>':"")+(rs.doneWhen?'<p class="small"><b>Kész feltétel:</b> '+esc(rs.doneWhen)+'</p>':"")+
+    '<label class="field"><span class="small">Fő zavaró tényező</span><select id="r-dist"><option value="nincs">Nem volt</option><option value="belso">Belső (éhség, unalom, egy gondolat)</option><option value="kulso">Külső (értesítés, ember, hívás)</option></select></label>'+
+    '<div class="row"><button class="btn sm" data-act="refl" data-o="igen">Sikerült</button><button class="btn ghost sm" data-act="refl" data-o="reszben">Részben</button><button class="btn ghost sm" data-act="refl" data-o="nem">Nem sikerült</button><button class="btn ghost sm" data-act="rskip">Most nem</button></div></div>';
+  if(startFor){const st=find(startFor);if(st)h+='<div class="panel" style="margin-bottom:14px"><p class="muted small">Fókuszblokk indítása</p><h3 style="margin:4px 0 8px">'+esc(st.title)+'</h3>'+
+    '<label class="field"><span class="small">Mit fog most csinálni?</span><input type="text" id="s-intent" maxlength="200" autocomplete="off"></label>'+
+    '<label class="field"><span class="small">Mi lesz a kész feltétel?</span><input type="text" id="s-done" maxlength="200" autocomplete="off"></label>'+
+    (S.timer?'<p class="small muted">A most futó blokk lezárul, és az eddigi ideje elszámolódik.</p>':"")+
+    '<div class="row"><button class="btn sm" data-act="go">Indítás</button><button class="btn ghost sm" data-act="scancel">Mégse</button></div></div>'}
   if(S.timer){const t=S.timer,task=find(t.taskId),c=task?task.mode:"munka",focus=t.phase==="focus";
     h+='<div class="panel timer" style="--c:var(--'+c+')"><svg viewBox="0 0 128 128" role="img" aria-label="Időmérő">'+
       '<circle cx="64" cy="64" r="54" fill="none" stroke="var(--soft)" stroke-width="9"/>'+
       '<circle id="t-ring" cx="64" cy="64" r="54" fill="none" stroke="'+(focus?"var(--c)":"var(--muted)")+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="339.29" stroke-dashoffset="339.29" transform="rotate(-90 64 64)"/>'+
       '<text id="t-time" class="time" x="64" y="73" text-anchor="middle">–</text></svg>'+
       '<div class="info"><p class="muted small">'+(focus?"Fókuszblokk":"Szünet. "+BREAK_TIPS[Math.floor(t.startAt/60000)%BREAK_TIPS.length])+'</p><h3 style="margin-bottom:10px">'+esc(task?task.title:"")+'</h3>'+
+      (focus&&t.intent?'<p class="small"><b>Szándék:</b> '+esc(t.intent)+'</p>':"")+(focus&&t.doneWhen?'<p class="small"><b>Kész, ha:</b> '+esc(t.doneWhen)+'</p>':"")+
       (task?'<p class="small" style="margin-bottom:10px">Hátra a feladatból: <b id="cd-task" style="font-variant-numeric:tabular-nums"></b> <span class="muted">(tervezve '+fm(task.plan)+')</span></p>':"")+
       '<button class="btn sm" data-act="stop">'+(focus?"Befejezem a blokkot":"Szünet kihagyása")+'</button></div></div>'}
   if(isToday)h+=nowPanel();
@@ -607,10 +626,16 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "done":if(!t)return;
       if(!t.completed){t.completed=true;const diff=t.plan-(t.done||0);
         if(diff>0){credit(t,diff);t.auto={min:diff,date:today()}}
-        if(S.timer&&S.timer.taskId===t.id&&S.timer.phase==="focus"){S.timer=null;document.title="Horárium – napi fókusz"}}
+        if(S.timer&&S.timer.taskId===t.id&&S.timer.phase==="focus"){logSession(S.timer,Math.round(Math.min(Date.now()-S.timer.startAt,S.timer.durMs)/60000),Date.now(),"igen");S.timer=null;document.title="Horárium – napi fókusz"}}
       else{t.completed=false;if(t.auto){t.done=Math.max(0,t.done-t.auto.min);uncredit(t.mode,t.auto.min,t.auto.date);delete t.auto}}
       save();break;
-    case "start":startTimer(b.dataset.id);window.scrollTo(0,0);return;
+    case "start":startFor=b.dataset.id;window.scrollTo(0,0);break;
+    case "scancel":startFor=null;break;
+    case "go":{const i=document.getElementById("s-intent"),w=document.getElementById("s-done"),id=startFor;startFor=null;
+      startTimer(id,i?i.value.trim().slice(0,200):"",w?w.value.trim().slice(0,200):"");window.scrollTo(0,0);return}
+    case "refl":{const x=S.sessions.find(y=>y.id===S.reflect),d=document.getElementById("r-dist");
+      if(x){x.outcome=b.dataset.o;x.distraction=d?d.value:""}S.reflect=null;save();break}
+    case "rskip":S.reflect=null;save();break;
     case "stop":stopTimer();return;
     case "plan":if(!t)return;t.plan=Math.min(600,Math.max(5,t.plan+(+b.dataset.d)));save();break;
     case "star":if(!t)return;
