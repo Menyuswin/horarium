@@ -762,7 +762,7 @@ function morningHtml(){const d=today(),m=S.morning[d],on=S.settings.pet.on;
 const INTRO_PAGES=[
   ["Tervezze meg a napot","A Napirendben sávokra osztja a napot: munka, tanulás, pihenés, edzés. A sávok hossza gombnyomással állítható, és ha a nap elcsúszik, a „Hátralévő nap újratervezése” rendet tesz.",1],
   ["Fókuszáljon, szándékkal","A feladat melletti ▶ gombbal indul egy fókuszblokk. Előbb leírja, mit fog csinálni, és mikor lesz kész. Ha közbejön valami, szüneteltethet, vagy egy sorban feljegyezheti, és a gondolat nem vész el.",2],
-  ["{n} együtt nő Önnel","Minden fókuszperccel egy kicsit vidámabb és ügyesebb lesz: új kinézetet kap és trükköket tanul. Semmit nem veszít el soha, legfeljebb álmos, ha aznap még nem dolgoztak együtt.",3],
+  ["{n} együtt fejlődik Önnel","Minden fókuszperccel egy kicsit vidámabb és ügyesebb lesz: új kinézetet kap és trükköket tanul. Semmit nem veszít el soha, legfeljebb álmos, ha aznap még nem dolgoztak együtt.",3],
   ["Este két perc","Az Este nézet néhány kedves mondatban összefoglalja a napot. A Hét nézet megmutatja, mikor és milyen hosszú blokkokban sikerül a legjobban a fókusz.",4]];
 function viewIntro(){const c=S.settings.pet,n=petName(),last=INTRO_PAGES.length+2,st=Math.min(introStep,last);
   const dots='<div class="idots" aria-hidden="true">'+Array.from({length:last+1},(_,i)=>'<i class="'+(i===st?"on":"")+'"></i>').join("")+'</div>';
