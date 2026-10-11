@@ -147,6 +147,38 @@ textarea{min-height:76px;resize:vertical}
 .tgt{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}
 .tgt input{min-height:42px}
 @media (prefers-reduced-motion:no-preference){.bar i,.strip i{transition:width .3s}}
+.pet-panel{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.pet-btn{flex:none;min-width:44px;min-height:44px;border-radius:16px;background:none;padding:0}
+.pet{width:132px;height:132px;display:block;overflow:visible}
+.pet-info{min-width:0;flex:1}.pet-info h3{margin:0 0 4px}
+.pbar{height:8px;border-radius:4px;background:var(--soft);margin-top:4px;overflow:hidden}.pbar i{display:block;height:100%;background:var(--munka)}
+.pet .tail{transform-origin:86px 90px;animation:pet-wag 1.4s ease-in-out infinite}
+.pet .eye{animation:pet-blink 5.5s infinite}
+.pet .breathe{transform-origin:60px 112px;animation:pet-breathe 3.4s ease-in-out infinite}
+.pet #pg{transform-origin:60px 100px}
+.pet .tongue,.pet .heart{opacity:0}
+.pet .zz{animation:pet-zz 3s ease-in-out infinite}
+.pet .tw{animation:pet-tw 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.pet.t-spin #pg{animation:pet-spin 1.1s ease-in-out}
+.pet.t-hop #pg{animation:pet-hop .9s ease-out}
+.pet.t-dance #pg{transform-origin:60px 108px;animation:pet-dance 1.8s ease-in-out}
+.pet.t-flip #pg{transform-origin:60px 70px;animation:pet-flip 1.2s ease-in-out}
+.pet.t-lick .tongue{animation:pet-lick 1.9s ease-in-out}
+.pet.t-hearts .heart{animation:pet-heart 1.9s ease-out both}
+.pet.t-hearts .h2{animation-delay:.25s}.pet.t-hearts .h3{animation-delay:.5s}
+@keyframes pet-wag{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(14deg)}}
+@keyframes pet-blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+@keyframes pet-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.015,1.03)}}
+@keyframes pet-zz{0%,100%{opacity:.2;transform:translateY(0)}50%{opacity:.9;transform:translateY(-6px)}}
+@keyframes pet-tw{0%,100%{opacity:.3;transform:scale(.7)}50%{opacity:1;transform:scale(1.1)}}
+@keyframes pet-spin{0%{transform:scaleX(1)}25%{transform:scaleX(0)}50%{transform:scaleX(-1)}75%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+@keyframes pet-hop{0%,100%{transform:translateY(0)}25%{transform:translateY(-14px)}50%{transform:translateY(0)}75%{transform:translateY(-9px)}}
+@keyframes pet-dance{0%,100%{transform:rotate(0)}20%{transform:rotate(-7deg)}40%{transform:rotate(7deg)}60%{transform:rotate(-7deg)}80%{transform:rotate(7deg)}}
+@keyframes pet-flip{0%{transform:translateY(0) rotate(0)}40%{transform:translateY(-22px) rotate(180deg)}80%{transform:translateY(-2px) rotate(360deg)}100%{transform:translateY(0) rotate(360deg)}}
+@keyframes pet-lick{0%{opacity:0;transform:translateX(7px)}10%{opacity:1}35%{transform:translateX(-6px)}60%{transform:translateX(7px)}85%{opacity:1;transform:translateX(-5px)}100%{opacity:0;transform:translateX(0)}}
+@keyframes pet-heart{0%{opacity:0;transform:translateY(8px)}20%{opacity:1}100%{opacity:0;transform:translateY(-24px)}}
+@media (prefers-reduced-motion:reduce){.pet *{animation:none!important}}
+@media (max-width:420px){.pet-panel{flex-direction:column;align-items:flex-start}}
 </style>
 </head>
 <body>
@@ -175,8 +207,8 @@ function defTemplates(){return{
       blk("14:30","18:30","Szabadprogram","szabad"),blk("19:00","22:00","Esti pihenés","pihenes")]}}
 function defTargets(){return{tanulas:{wd:5,we:2},munka:{wd:30,we:0},szabad:{wd:7,we:6},pihenes:{wd:15,we:8},edzes:{wd:5,we:2}}}
 function defaults(){return{v:2,updatedAt:0,
-  settings:{targets:defTargets(),focus:50,brk:10,travel:20,templates:defTemplates()},
-  tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{},sessions:[],reflect:null}}
+  settings:{targets:defTargets(),focus:50,brk:10,travel:20,templates:defTemplates(),pet:{on:true,species:"kutya",name:""}},
+  tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{},sessions:[],reflect:null,petMins:0}}
 function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=d.settings||{};
   const s=Object.assign(b,d);s.v=2;
   s.settings=Object.assign(b.settings,ds);
@@ -185,7 +217,10 @@ function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=
   s.settings.targets=tg;
   const tp=ds.templates;
   s.settings.templates=(tp&&Array.isArray(tp.wd)&&Array.isArray(tp.we))?tp:defTemplates();
-  s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.hourLog=d.hourLog||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};s.sessions=Array.isArray(d.sessions)?d.sessions:[];s.reflect=d.reflect||null;return s}
+  s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.hourLog=d.hourLog||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};s.sessions=Array.isArray(d.sessions)?d.sessions:[];s.reflect=d.reflect||null;s.petMins=Math.max(0,+d.petMins||0);
+  s.settings.pet=Object.assign({on:true,species:"kutya",name:""},ds.pet||{});
+  if(["kutya","macska","nyul","horcsog"].indexOf(s.settings.pet.species)<0)s.settings.pet.species="kutya";
+  s.settings.pet.name=String(s.settings.pet.name||"").slice(0,20);return s}
 
 let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,confirmReset=false,confirmDay=false,
     flash="",startFor=null,capOpen=false,syncOn=false,pDate=null,editPlan=false,editId=null,editMode="munka";
@@ -340,7 +375,9 @@ function resumeTimer(){const t=S.timer;if(!t||!t.pausedAt)return;const n=Date.no
 function logSession(t,min,endAt,outcome){if(min<1)return null;const task=find(t.taskId);
   const x={id:uid(),taskId:t.taskId,title:task?task.title:"",mode:task?task.mode:"",planned:Math.round(t.durMs/60000),actual:min,
     start:t.began||t.startAt,end:endAt,intent:t.intent||"",doneWhen:t.doneWhen||"",outcome:outcome||"",distraction:"",pauses:t.pauses||[],distractions:t.distractions||[]};
-  S.sessions.push(x);return x}
+  S.sessions.push(x);const before=petLevel(S.petMins||0);S.petMins=(S.petMins||0)+min;const after=petLevel(S.petMins);
+  if(after>before&&S.settings.pet.on)flash=petName()+" szintet lépett: "+PET_NAMES[after]+". Újdonság: "+PET_UNLOCK[after]+".";
+  return x}
 function stopTimer(silent){const t=S.timer;if(!t)return;
   if(t.phase==="focus"){const el=Math.min(tNow(t)-t.startAt,t.durMs),m=Math.round(el/60000),task=find(t.taskId);
     if(task&&m>=1){credit(task,m);hourCredit(m,new Date(t.startAt))}
@@ -449,6 +486,7 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
       (focus&&capOpen?'<div class="panel" style="margin-bottom:14px"><label class="field"><span class="small">Mi jött közbe?</span><input type="text" id="c-note" maxlength="200" autocomplete="off"></label>'+
         '<label class="field"><span class="small">Honnan jött?</span><select id="c-type"><option value="belso">Belső (gondolat, éhség, unalom)</option><option value="kulso">Külső (értesítés, ember, hívás)</option></select></label>'+
         '<div class="row"><button class="btn sm" data-act="capsave">Rögzítem</button><button class="btn ghost sm" data-act="capsave" data-todo="1">Rögzítem, és legyen belőle teendő</button><button class="btn ghost sm" data-act="cap">Bezárom</button></div></div>':"")}
+  if(isToday&&S.settings.pet.on)h+=petPanel();
   if(isToday)h+=nowPanel();
   h+='<div class="row" style="justify-content:space-between"><div class="days" role="group" aria-label="Nap">'+
     '<button data-act="day" data-o="0" aria-pressed="'+(dayOff===0)+'">Ma</button><button data-act="day" data-o="1" aria-pressed="'+(dayOff===1)+'">Holnap</button></div>';
@@ -521,6 +559,81 @@ function viewNapirend(){const w=weekDates();if(!pDate||!w.includes(pDate))pDate=
   if(loose.length)h+='<h2>Sávhoz nem rendelt feladatok</h2><ul class="tasks">'+loose.map(t=>taskHtml(t,isToday)).join("")+'</ul>'+
     '<p class="muted small">Nyissa meg a feladatot, és válasszon neki napirendi sávot.</p>';
   return h}
+
+/* ---------- pet ---------- */
+/* The pet is happier the more focus the day holds, and grows (look, manners, tricks) with total focus minutes.
+   Nothing is ever taken away: a day without focus only leaves it sleepy. */
+const PETS={kutya:{n:"Kutya",def:"Bodri",fur:"#D9A066",dark:"#A9702F",belly:"#F6E3C4"},
+  macska:{n:"Macska",def:"Cirmi",fur:"#9FA8B8",dark:"#6E7788",belly:"#E6E9EF"},
+  nyul:{n:"Nyúl",def:"Pamacs",fur:"#F3EADF",dark:"#D9C6B0",belly:"#FFFFFF"},
+  horcsog:{n:"Hörcsög",def:"Mazsola",fur:"#E7C28F",dark:"#C79A5E",belly:"#FFF3DF"}};
+const PET_LV=[0,45,120,240,420,660,960];
+const PET_NAMES=["Félénk kölyök","Barátkozó","Kedves","Játékos","Ragaszkodó","Imádnivaló","Legjobb barát"];
+const PET_UNLOCK=["","masni és a megfordulás","virág és az ugrándozás","sál és a szívecskék","parti sapka és a tánc","a bukfenc","korona"];
+const PET_TRICKS=[["lick","megnyalja a száját",0],["spin","megfordul",1],["hop","ugrándozik",2],["hearts","szívecskéket küld",3],["dance","táncol",4],["flip","bukfencet vet",5]];
+const PET_MOOD=["{n} még álmos, de örül, hogy itt van.","{n} kíváncsian figyel.","{n} vidám, jó ma a hangulata.","{n} nagyon boldog.","{n} ujjong, ma sokat fókuszáltak együtt."];
+function petName(){const c=S.settings.pet;return c.name||PETS[c.species].def}
+function petLevel(m){let l=0;PET_LV.forEach((v,i)=>{if(m>=v)l=i});return l}
+function petTodayMin(){const n=new Date(),d0=new Date(n.getFullYear(),n.getMonth(),n.getDate()).getTime();
+  let m=S.sessions.filter(x=>x.start>=d0).reduce((a,x)=>a+x.actual,0);const t=S.timer;
+  if(t&&t.phase==="focus")m+=Math.round(Math.min(tNow(t)-t.startAt,t.durMs)/60000);return m}
+function petMood(){const m=petTodayMin(),run=!!(S.timer&&S.timer.phase==="focus"&&!S.timer.pausedAt);
+  return m>=120?4:m>=60?3:m>=25?2:(m>0||run)?1:0}
+function petSvg(key,mood,lv){const P=PETS[key]||PETS.kutya,F=P.fur,D=P.dark,B=P.belly,K="#3B2F2A",PK="#F4B6C2",o='stroke="'+K+'" stroke-width="1.6" stroke-linejoin="round"';
+  let tail="",ears="",extra="";
+  if(key==="kutya"){tail='<path class="tail" d="M86 90 Q106 80 100 60" fill="none" stroke="'+F+'" stroke-width="8" stroke-linecap="round"/>';
+    ears='<ellipse cx="37" cy="50" rx="9" ry="17" transform="rotate(22 37 50)" fill="'+D+'" '+o+'/><ellipse cx="83" cy="50" rx="9" ry="17" transform="rotate(-22 83 50)" fill="'+D+'" '+o+'/>';
+    extra='<ellipse cx="73" cy="50" rx="9" ry="10" fill="'+D+'" opacity=".5"/>'}
+  else if(key==="macska"){tail='<path class="tail" d="M86 94 Q114 94 108 64" fill="none" stroke="'+F+'" stroke-width="7" stroke-linecap="round"/>';
+    ears='<path d="M35 40 L38 14 L57 30 Z" fill="'+F+'" '+o+'/><path d="M39 34 L40 22 L50 30 Z" fill="'+PK+'"/><path d="M85 40 L82 14 L63 30 Z" fill="'+F+'" '+o+'/><path d="M81 34 L80 22 L70 30 Z" fill="'+PK+'"/>';
+    extra='<path d="M56 32 L56 38 M60 31 L60 38 M64 32 L64 38" stroke="'+D+'" stroke-width="2" stroke-linecap="round"/>'}
+  else if(key==="nyul"){tail='<circle class="tail" cx="90" cy="96" r="7" fill="#fff" '+o+'/>';
+    ears='<g transform="rotate(-6 47 22)"><ellipse cx="47" cy="22" rx="7" ry="20" fill="'+F+'" '+o+'/><ellipse cx="47" cy="24" rx="3.5" ry="13" fill="'+PK+'"/></g><g transform="rotate(6 73 22)"><ellipse cx="73" cy="22" rx="7" ry="20" fill="'+F+'" '+o+'/><ellipse cx="73" cy="24" rx="3.5" ry="13" fill="'+PK+'"/></g>'}
+  else{tail='<circle class="tail" cx="88" cy="97" r="4" fill="'+D+'"/>';
+    ears='<circle cx="38" cy="34" r="9" fill="'+D+'" '+o+'/><circle cx="38" cy="34" r="4.5" fill="'+PK+'"/><circle cx="82" cy="34" r="9" fill="'+D+'" '+o+'/><circle cx="82" cy="34" r="4.5" fill="'+PK+'"/>'}
+  const whisk=key==="kutya"?"":'<path d="M30 60 L44 62 M30 66 L44 65 M90 60 L76 62 M90 66 L76 65" stroke="'+K+'" stroke-width="1.2" opacity=".45" stroke-linecap="round"/>';
+  const eye=x=>'<g class="eye" style="transform-origin:'+x+'px 52px"><ellipse cx="'+x+'" cy="52" rx="3.4" ry="4.4" fill="'+K+'"/><circle cx="'+(x+1.2)+'" cy="50.4" r="1.3" fill="#fff"/></g>';
+  const eyes=mood===0?'<path d="M45 53 Q50 57 55 53 M65 53 Q70 57 75 53" fill="none" stroke="'+K+'" stroke-width="2" stroke-linecap="round"/>':
+    mood===4?'<path d="M45 55 Q50 48 55 55 M65 55 Q70 48 75 55" fill="none" stroke="'+K+'" stroke-width="2" stroke-linecap="round"/>':eye(50)+eye(70);
+  const mouth=mood===0?'<path d="M57 66 L63 66" stroke="'+K+'" stroke-width="1.8" stroke-linecap="round"/>':
+    mood===1?'<path d="M56 65 Q60 68 64 65" fill="none" stroke="'+K+'" stroke-width="1.8" stroke-linecap="round"/>':
+    mood===2?'<path d="M53 64 Q60 71 67 64" fill="none" stroke="'+K+'" stroke-width="1.8" stroke-linecap="round"/>':
+    '<path d="M52 64 Q60 78 68 64 Z" fill="#7A2E3A" stroke="'+K+'" stroke-width="1.4" stroke-linejoin="round"/><ellipse cx="60" cy="71" rx="4" ry="2.6" fill="#F28B9B"/>';
+  const nose=(key==="kutya"||key==="horcsog")?'<ellipse cx="60" cy="59.5" rx="4" ry="3" fill="'+K+'"/>':'<ellipse cx="60" cy="59.5" rx="3" ry="2.4" fill="#E58DA0"/>';
+  let acc="";
+  if(lv>=3)acc+='<path d="M38 78 Q60 90 82 78 L82 85 Q60 97 38 85 Z" fill="#3F7CC4" '+o+'/><path d="M72 88 L80 104 L70 104 Z" fill="#3F7CC4" '+o+'/>';
+  else if(lv>=1)acc+='<path d="M60 83 L47 76 L47 90 Z" fill="#D9485B" '+o+'/><path d="M60 83 L73 76 L73 90 Z" fill="#D9485B" '+o+'/><circle cx="60" cy="83" r="3.6" fill="#B93548" '+o+'/>';
+  if(lv>=6)acc+='<path d="M46 32 L48 17 L54 26 L60 13 L66 26 L72 17 L74 32 Z" fill="#F2C233" '+o+'/>';
+  else if(lv>=4)acc+='<path d="M50 32 L60 7 L70 32 Z" fill="#8E5CD9" '+o+'/><circle cx="60" cy="7" r="3.2" fill="#fff" '+o+'/><circle cx="57" cy="22" r="1.6" fill="#fff"/><circle cx="63" cy="16" r="1.6" fill="#fff"/>';
+  else if(lv>=2)acc+='<g transform="translate(60 28)">'+[0,72,144,216,288].map(a=>'<circle cx="'+(4.2*Math.sin(a*Math.PI/180)).toFixed(1)+'" cy="'+(-4.2*Math.cos(a*Math.PI/180)).toFixed(1)+'" r="3.2" fill="#F28BB0"/>').join("")+'<circle r="2.4" fill="#F2C233"/></g>';
+  const hearts=[[44,30,"h1"],[60,22,"h2"],[76,30,"h3"]].map(h=>'<g transform="translate('+h[0]+' '+h[1]+') scale(.7)"><path class="heart '+h[2]+'" d="M0 2 C-4 -4 -10 1 0 8 C10 1 4 -4 0 2Z" fill="#E5566F"/></g>').join("");
+  const star=(x,y)=>'<path class="tw" d="M'+x+' '+(y-6)+' L'+(x+1.6)+' '+(y-1.6)+' L'+(x+6)+' '+y+' L'+(x+1.6)+' '+(y+1.6)+' L'+x+' '+(y+6)+' L'+(x-1.6)+' '+(y+1.6)+' L'+(x-6)+' '+y+' L'+(x-1.6)+' '+(y-1.6)+' Z" fill="#F2C233"/>';
+  return '<svg id="pet-svg" class="pet" viewBox="0 0 120 120" role="img" aria-label="'+esc(petName())+', '+PETS[key].n.toLowerCase()+'">'+
+    '<ellipse cx="60" cy="114" rx="34" ry="5" fill="#000" opacity=".12"/>'+
+    '<g id="pg"><g class="breathe">'+tail+
+    '<ellipse cx="60" cy="90" rx="28" ry="22" fill="'+F+'" '+o+'/><ellipse cx="60" cy="95" rx="16" ry="14" fill="'+B+'"/>'+
+    '<ellipse cx="46" cy="109" rx="9" ry="5.5" fill="'+B+'" '+o+'/><ellipse cx="74" cy="109" rx="9" ry="5.5" fill="'+B+'" '+o+'/>'+
+    ears+'<circle cx="60" cy="54" r="26" fill="'+F+'" '+o+'/>'+extra+'<ellipse cx="60" cy="63" rx="12" ry="9" fill="'+B+'"/>'+
+    '<circle cx="43" cy="62" r="5" fill="#F28B9B" opacity="'+[.15,.22,.32,.45,.6][mood]+'"/><circle cx="77" cy="62" r="5" fill="#F28B9B" opacity="'+[.15,.22,.32,.45,.6][mood]+'"/>'+
+    eyes+whisk+nose+mouth+'<ellipse class="tongue" cx="60" cy="69.5" rx="4.5" ry="3.2" fill="#F28B9B" stroke="#D9677A" stroke-width="1"/>'+acc+'</g></g>'+
+    hearts+(mood===4?star(22,32)+star(100,38):"")+(mood===0?'<text class="zz" x="88" y="30" font-size="13" font-weight="700" fill="var(--muted)">z</text>':"")+'</svg>'}
+function petPanel(){const c=S.settings.pet,m=S.petMins||0,lv=petLevel(m),mood=petMood(),nx=PET_LV[lv+1],n=petName(),t=S.timer;
+  let say=PET_MOOD[mood].replace("{n}",n);if(t&&t.phase==="focus"&&!t.pausedAt&&mood<=2)say=n+" mellette ül, és szurkol.";
+  const un=PET_TRICKS.filter(x=>x[2]<=lv);
+  return '<div class="panel pet-panel"><button class="pet-btn" data-act="petpoke" aria-label="Simogassa meg: '+esc(n)+'">'+petSvg(c.species,mood,lv)+'</button>'+
+    '<div class="pet-info"><h3>'+esc(n)+'</h3><p class="small">'+esc(say)+'</p>'+
+    '<p class="small muted" style="margin-top:6px">Szint '+lv+': '+PET_NAMES[lv]+'</p>'+
+    '<div class="pbar" aria-hidden="true"><i style="width:'+(nx?Math.round((m-PET_LV[lv])/(nx-PET_LV[lv])*100):100)+'%"></i></div>'+
+    '<p class="note muted">'+(nx?"Még "+fm(nx-m)+" fókusz a következő szintig. Újdonság: "+PET_UNLOCK[lv+1]+".":"Elérte a legmagasabb szintet.")+'</p>'+
+    '<p class="note muted">Trükkök ('+un.length+" / "+PET_TRICKS.length+"): "+un.map(x=>x[1]).join(", ")+'.</p></div></div>'}
+let petBusy=false;
+function petTrick(name){const el=document.getElementById("pet-svg");if(!el||petBusy)return;
+  petBusy=true;el.classList.add("t-"+name);
+  setTimeout(()=>{el.classList.remove("t-"+name);petBusy=false},{lick:2000,spin:1200,hop:1000,hearts:2300,dance:1900,flip:1300}[name]||1500)}
+const petReduced=()=>window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* Every few seconds the pet may do a trick it has already learned. A sleepy pet stays quiet. */
+setInterval(()=>{if(document.hidden||petBusy||!S.settings.pet.on||petReduced()||petMood()===0||Math.random()>.28)return;
+  const lv=petLevel(S.petMins||0),a=PET_TRICKS.filter(x=>x[2]<=lv);petTrick(a[Math.floor(Math.random()*a.length)][0])},3000);
 
 /* ---------- focus-session statistics ---------- */
 /* Groups the last 28 days of sessions by block length and by part of the day.
@@ -631,6 +744,11 @@ function viewBeall(){const s=S.settings,T=s.targets;
   h+='<h2>Jelzések</h2><div class="panel"><p style="margin-bottom:10px">'+(S.settings.alerts?"Hang és értesítés jelzi, amikor egy napirendi sáv elkezdődik vagy véget ér, és amikor a fókuszidő lejár.":"Kikapcsolva. Bekapcsolva hang és értesítés jelzi a napirendi sávok kezdését és végét.")+'</p>'+
     '<button class="btn'+(S.settings.alerts?"":" ghost")+'" data-act="alerts">'+(S.settings.alerts?"Kikapcsolás":"Bekapcsolás")+'</button>'+
     (S.settings.alerts&&"Notification"in window&&Notification.permission==="denied"?'<p class="muted small" style="margin-top:8px">Az értesítés tiltva van a böngészőben, ezért csak a hang szól.</p>':"")+'</div>';
+  const pc=S.settings.pet;
+  h+='<h2>Kisállat</h2><div class="panel"><p style="margin-bottom:10px">'+(pc.on?"A kisállat a fókuszidővel egyre vidámabb, kedvesebb és ügyesebb lesz. Soha nem veszít el semmit, legfeljebb álmos, ha aznap még nem fókuszáltak együtt.":"Kikapcsolva.")+'</p>'+
+    '<div class="row" style="margin-bottom:12px"><button class="btn'+(pc.on?"":" ghost")+'" data-act="peton">'+(pc.on?"Kikapcsolás":"Bekapcsolás")+'</button></div>'+
+    '<div class="row chips" role="group" aria-label="Kisállat faja" style="margin-bottom:12px">'+Object.keys(PETS).map(k=>'<button data-act="pspecies" data-k="'+k+'" aria-pressed="'+(pc.species===k)+'">'+PETS[k].n+'</button>').join("")+'</div>'+
+    '<label class="field"><span>Neve</span><input type="text" maxlength="20" data-set="petname" value="'+esc(pc.name)+'" placeholder="'+esc(PETS[pc.species].def)+'" autocomplete="off"></label></div>';
   h+='<h2>Adatok</h2><div class="panel"><p style="margin-bottom:10px">'+(syncOn?"Az adatai a fiókjához kötve mentődnek, így másik eszközön is ugyanezt látja.":"Az adatai jelenleg ezen az eszközön, ebben a böngészőben mentődnek.")+'</p>'+
     '<button class="btn ghost" data-act="reset">'+(confirmReset?"Biztosan törlöm az összes adatot":"Minden adat törlése")+'</button></div>';
   return h}
@@ -684,6 +802,9 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "refl":{const x=S.sessions.find(y=>y.id===S.reflect),d=document.getElementById("r-dist");
       if(x){x.outcome=b.dataset.o;x.distraction=d?d.value:""}S.reflect=null;save();break}
     case "rskip":S.reflect=null;save();break;
+    case "peton":S.settings.pet.on=!S.settings.pet.on;save();break;
+    case "pspecies":if(PETS[b.dataset.k]){S.settings.pet.species=b.dataset.k;save()}break;
+    case "petpoke":petTrick("hearts");return;
     case "pause":pauseTimer();return;
     case "resume":resumeTimer();return;
     case "pwhy":{const p=S.timer&&(S.timer.pauses||[]).slice(-1)[0];if(p){p.k=b.dataset.k;save()}break}
@@ -759,6 +880,7 @@ document.addEventListener("pointerup",e=>endDrag(e,true));
 document.addEventListener("pointercancel",e=>endDrag(e,false));
 document.addEventListener("change",e=>{const i=e.target,ds=i.dataset||{};
   if(!ds.set&&!ds.assign&&!ds.bf)return;
+  if(ds.set==="petname"){S.settings.pet.name=i.value.trim().slice(0,20);save();render();return}
   if(ds.set){const v=+String(i.value).replace(",",".");
     if(ds.set==="target"){const T=S.settings.targets[ds.k];if(T)T[ds.t]=Math.min(100,Math.max(0,isFinite(v)?v:0))}
     if(ds.set==="focus")S.settings.focus=Math.min(180,Math.max(5,Math.round(v)||50));
