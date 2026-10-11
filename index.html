@@ -989,9 +989,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
         else{const id=uid();const full=S.tasks.filter(x=>x.date===tmw&&x.star).length>=3;
           S.tasks.push({id,date:tmw,title:first,mode:formMode,plan:+S.settings.focus||50,done:0,star:!full,completed:false,postponed:0,blockId:null});r.taskId=id}}
       r.first=first;S.reviews[d]=r;flash="Visszatekintés mentve."+(first?" A holnapi első feladat bekerült a holnapi listába.":"");save();break}
-    case "export":{const blob=new Blob([JSON.stringify(S,null,1)],{type:"application/json"}),u=URL.createObjectURL(blob),l=document.createElement("a");
-      l.href=u;l.download="horarium-"+today()+".json";document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);
-      flash="Az adatai elmentve: horarium-"+today()+".json.";break}
+    case "export":exportData();return;
     case "impok":if(pendingImport){S=pendingImport;S.updatedAt=Date.now();pendingImport=null;save();flash="Az adatai visszatöltve."}break;
     case "impno":pendingImport=null;break;
     case "reset":if(!confirmReset){confirmReset=true;break}
@@ -1013,6 +1011,17 @@ function endDrag(e,commit){if(!drag||e.pointerId!==drag.pid)return;const x=drag;
   render()}
 document.addEventListener("pointerup",e=>endDrag(e,true));
 document.addEventListener("pointercancel",e=>endDrag(e,false));
+/* Saves all data as a JSON file. Inside the Claude viewer the save goes through the downloads capability
+   (the viewer confirms it); on a plain web page a normal download link is used. */
+async function exportData(){const name="horarium-"+today()+".json",json=JSON.stringify(S,null,1);
+  if(window.claude&&window.claude.use){let dl=null;try{dl=await window.claude.use("downloads")}catch(e){}
+    if(!dl){flash="Ebben a nézetben a fájlba mentés nem érhető el. Nyissa meg az alkalmazást a weboldalán, és mentsen onnan.";render();return}
+    try{await dl.save({filename:name,data:json});flash="Az adatai elmentve: "+name+"."}
+    catch(e){flash=e&&e.code==="declined"?"A mentés elmaradt.":e&&e.code==="rate_limited"?"Egy mentés már folyamatban van, próbálja újra kicsit később.":"A mentés most nem sikerült."}
+    render();return}
+  const u=URL.createObjectURL(new Blob([json],{type:"application/json"})),l=document.createElement("a");
+  l.href=u;l.download=name;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);
+  flash="Az adatai elmentve: "+name+".";render()}
 /* Reads a saved file and shows what it holds; nothing is replaced until the user confirms. */
 function readImport(file){const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);if(!d||typeof d!=="object"||!d.settings||!Array.isArray(d.tasks))throw 0;pendingImport=normalize(d)}
