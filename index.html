@@ -183,6 +183,16 @@ textarea{min-height:76px;resize:vertical}
 @keyframes pet-heart{0%{opacity:0;transform:translateY(8px)}20%{opacity:1}100%{opacity:0;transform:translateY(-24px)}}
 @media (prefers-reduced-motion:reduce){.pet *{animation:none!important}}
 @media (max-width:420px){.pet-panel{flex-direction:column;align-items:flex-start}}
+.intro{max-width:520px;margin:0 auto;padding-top:8px}
+.intro h1{margin:6px 0 10px}
+.ilead{font-size:1.08rem;margin-bottom:16px}
+.ipet{display:flex;justify-content:center;margin:6px 0 4px}.ipet .pet{width:168px;height:168px}
+.idots{display:flex;gap:6px;justify-content:center;margin-bottom:10px}.idots i{width:8px;height:8px;border-radius:50%;background:var(--line)}.idots i.on{background:var(--ink);width:20px;border-radius:4px}
+.inav{justify-content:flex-end}.inav .btn{min-width:110px}
+.ipick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.ipick button{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:6px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:44px}
+.ipick button[aria-pressed="true"]{border:2px solid var(--ink);background:var(--soft)}
+.ipick .pet{width:84px;height:84px}.ipick span{font-size:.92rem;font-weight:500;line-height:1.2;text-align:center}.ipick em{display:block;font-style:normal;font-size:.75rem;color:var(--muted);font-weight:400}
 </style>
 </head>
 <body>
@@ -212,7 +222,7 @@ function defTemplates(){return{
 function defTargets(){return{tanulas:{wd:5,we:2},munka:{wd:30,we:0},szabad:{wd:7,we:6},pihenes:{wd:15,we:8},edzes:{wd:5,we:2}}}
 function defaults(){return{v:2,updatedAt:0,
   settings:{targets:defTargets(),focus:50,brk:10,travel:20,templates:defTemplates(),pet:{on:true,species:"kutya",name:""}},
-  tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{},sessions:[],reflect:null,petMins:0,morning:{}}}
+  tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{},sessions:[],reflect:null,petMins:0,morning:{},onboarded:false}}
 function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=d.settings||{};
   const s=Object.assign(b,d);s.v=2;
   s.settings=Object.assign(b.settings,ds);
@@ -224,10 +234,11 @@ function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=
   s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.hourLog=d.hourLog||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};s.sessions=Array.isArray(d.sessions)?d.sessions:[];s.reflect=d.reflect||null;s.petMins=Math.max(0,+d.petMins||0);
   s.settings.pet=Object.assign({on:true,species:"kutya",name:""},ds.pet||{});
   s.morning=d.morning&&typeof d.morning==="object"?d.morning:{};
+  s.onboarded=d.onboarded!==undefined?!!d.onboarded:!!((Array.isArray(d.tasks)&&d.tasks.length)||(Array.isArray(d.sessions)&&d.sessions.length));
   if(["kutya","macska","nyul","horcsog","felho","moha"].indexOf(s.settings.pet.species)<0)s.settings.pet.species="kutya";
   s.settings.pet.name=String(s.settings.pet.name||"").slice(0,20);return s}
 
-let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,confirmReset=false,confirmDay=false,pendingImport=null,petRename=false,
+let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,confirmReset=false,confirmDay=false,pendingImport=null,petRename=false,introStep=0,
     flash="",startFor=null,capOpen=false,syncOn=false,pDate=null,editPlan=false,editId=null,editMode="munka";
 /* Edit form for a task that is already on a day. Shown in place of its action row. */
 function taskForm(t){return '<div class="panel" style="margin-top:4px"><label class="field"><span class="small">Cím</span><input type="text" id="e-title" maxlength="120" value="'+esc(t.title)+'" autocomplete="off"></label>'+
@@ -745,6 +756,37 @@ function morningHtml(){const d=today(),m=S.morning[d],on=S.settings.pet.on;
     '<label class="field"><span class="small">Írja le egy mondatban</span><input type="text" id="mo-text" maxlength="120" autocomplete="off"></label>'+
     '<div class="modes" role="group" aria-label="Mód">'+MK.filter(k=>k!=="edzes").map(k=>'<button data-act="fmode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(formMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
     '<div class="row"><button class="btn sm" data-act="mosave">Ez lesz a mai egy dolog</button><button class="btn ghost sm" data-act="moskip">Ma kihagyom</button></div></div>'}
+/* ---------- first visit ---------- */
+/* A short guided start: welcome, choose a pet, four pages on how the app works, then the first step.
+   The chosen pet appears on every page and gets a little happier from page to page. */
+const INTRO_PAGES=[
+  ["Tervezze meg a napot","A Napirendben sávokra osztja a napot: munka, tanulás, pihenés, edzés. A sávok hossza gombnyomással állítható, és ha a nap elcsúszik, a „Hátralévő nap újratervezése” rendet tesz.",1],
+  ["Fókuszáljon, szándékkal","A feladat melletti ▶ gombbal indul egy fókuszblokk. Előbb leírja, mit fog csinálni, és mikor lesz kész. Ha közbejön valami, szüneteltethet, vagy egy sorban feljegyezheti, és a gondolat nem vész el.",2],
+  ["{n} együtt nő Önnel","Minden fókuszperccel egy kicsit vidámabb és ügyesebb lesz: új kinézetet kap és trükköket tanul. Semmit nem veszít el soha, legfeljebb álmos, ha aznap még nem dolgoztak együtt.",3],
+  ["Este két perc","Az Este nézet néhány kedves mondatban összefoglalja a napot. A Hét nézet megmutatja, mikor és milyen hosszú blokkokban sikerül a legjobban a fókusz.",4]];
+function viewIntro(){const c=S.settings.pet,n=petName(),last=INTRO_PAGES.length+2,st=Math.min(introStep,last);
+  const dots='<div class="idots" aria-hidden="true">'+Array.from({length:last+1},(_,i)=>'<i class="'+(i===st?"on":"")+'"></i>').join("")+'</div>';
+  const nav=(next,label)=>'<div class="row inav">'+(st>0?'<button class="btn ghost" data-act="intro" data-s="'+(st-1)+'">Vissza</button>':"")+
+    '<button class="btn" data-act="intro" data-s="'+next+'">'+label+'</button></div>';
+  const skip='<p style="margin-top:14px;text-align:center"><button class="small muted" data-act="introdone" style="text-decoration:underline">Kihagyom a bemutatót</button></p>';
+  const big=(mood)=>c.on?'<div class="ipet">'+petSvg(c.species,mood,0)+'</div>':"";
+  let h='<div class="intro">'+dots;
+  if(st===0)h+='<div class="ipet">'+petSvg("kutya",3,0).replace('id="pet-svg" ','')+'</div><h1>Üdvözli a Horárium</h1>'+
+    '<p class="ilead">Napi terv, nyugodt fókusz, és egy kis társ, aki minden közös perccel egyre jobban örül Önnek.</p>'+
+    '<p class="muted small" style="margin-bottom:18px">Egy perc az egész: kiválaszt egy kisállatot, és megmutatjuk, mi hol van.</p>'+nav(1,"Kezdjük")+skip;
+  else if(st===1){h+='<h1>Válasszon társat</h1><p class="ilead">Ő lesz a napjai kísérője. Később a Beállításokban bármikor lecserélheti.</p>'+
+    '<div class="ipick" role="group" aria-label="Kisállat választása">'+Object.keys(PETS).map(k=>'<button data-act="introPick" data-k="'+k+'" aria-pressed="'+(c.on&&c.species===k)+'">'+
+      petSvg(k,c.on&&c.species===k?3:1,0).replace('id="pet-svg" ','')+'<span>'+PETS[k].n+(PETS[k].fict?' <em>képzeletbeli</em>':'')+'</span></button>').join("")+'</div>'+
+    (c.on?'<label class="field"><span>Hogy hívják?</span><input type="text" id="intro-name" maxlength="20" placeholder="'+esc(PETS[c.species].def)+'" value="'+esc(c.name)+'" autocomplete="off"></label>':"")+
+    '<p style="margin-bottom:12px"><button class="small muted" data-act="introNoPet" style="text-decoration:underline">'+(c.on?"Inkább kisállat nélkül":"Mégis kérek kisállatot")+'</button></p>'+nav(2,"Tovább")}
+  else if(st<last){const pg=INTRO_PAGES[st-2];
+    h+=big(pg[2])+'<p class="muted small">'+(st-1)+' / '+INTRO_PAGES.length+'</p><h1>'+esc(pg[0].replace("{n}",c.on?n:"A haladása"))+'</h1><p class="ilead">'+esc(c.on||st!==4?pg[1]:"A Hét nézetben látja, hogyan gyűlik a fókuszideje, és mikor sikerül a legjobban.")+'</p>'+nav(st+1,"Tovább")+skip}
+  else h+=big(4)+'<h1>Az első lépés</h1><p class="ilead">Mi az az egy dolog, amire ma este büszke lenne? Írja le, és ez lesz a mai kiemelt feladata.</p>'+
+    '<label class="field"><span>Egy mondatban</span><input type="text" id="intro-one" maxlength="120" autocomplete="off" placeholder="pl. Befejezem az ajánlatot"></label>'+
+    '<div class="row inav"><button class="btn ghost" data-act="intro" data-s="'+(st-1)+'">Vissza</button><button class="btn" data-act="introdone" data-one="1">Indulás</button></div>'+
+    '<p class="muted small" style="margin-top:10px;text-align:center">Kihagyhatja, a kérdés reggelente a Ma nézetben is megjelenik.</p>';
+  return h+'</div>'}
+function introSaveName(){const i=document.getElementById("intro-name");if(i)S.settings.pet.name=i.value.trim().slice(0,20)}
 /* ---------- focus-session statistics ---------- */
 /* Groups the last 28 days of sessions by block length and by part of the day.
    Success counts a "yes" as 1 and "partly" as 0.5; sessions without a reflection are left out of the rates. */
@@ -864,6 +906,7 @@ function viewBeall(){const s=S.settings,T=s.targets;
     [[0,"Valódi"],[1,"Képzeletbeli"]].map(g=>'<p class="small muted" style="margin-bottom:4px">'+g[1]+'</p><div class="row chips" role="group" aria-label="'+g[1]+' kisállatok" style="margin-bottom:12px">'+
       Object.keys(PETS).filter(k=>!!PETS[k].fict===!!g[0]).map(k=>'<button data-act="pspecies" data-k="'+k+'" aria-pressed="'+(pc.species===k)+'">'+PETS[k].n+'</button>').join("")+'</div>').join("")+
     '<label class="field"><span>Neve</span><input type="text" maxlength="20" data-set="petname" value="'+esc(pc.name)+'" placeholder="'+esc(PETS[pc.species].def)+'" autocomplete="off"></label></div>';
+  h+='<p style="margin-top:18px"><button class="btn ghost sm" data-act="introAgain">A bemutató újra</button></p>';
   h+='<h2>Adatok</h2><div class="panel"><p style="margin-bottom:10px">'+(syncOn?"Az adatai a fiókjához kötve mentődnek, így másik eszközön is ugyanezt látja.":"Az adatai jelenleg ezen az eszközön, ebben a böngészőben mentődnek.")+'</p>'+
     '<p class="small" style="margin-bottom:8px">Mentse el időnként az adatait egy fájlba. Ebből másik gépen vagy böngészőben is visszatöltheti őket.</p>'+
     '<div class="row" style="margin-bottom:12px"><button class="btn sm" data-act="export">Mentés fájlba</button>'+
@@ -873,7 +916,8 @@ function viewBeall(){const s=S.settings,T=s.targets;
     '<button class="btn ghost" data-act="reset">'+(confirmReset?"Biztosan törlöm az összes adatot":"Minden adat törlése")+'</button></div>';
   return h}
 
-function render(){const beh=weekStatus().some(x=>x.behind);
+function render(){if(!S.onboarded){document.getElementById("tabs").innerHTML="";document.getElementById("app").innerHTML=viewIntro();return}
+  const beh=weekStatus().some(x=>x.behind);
   document.getElementById("tabs").innerHTML=[["ma","Ma"],["nap","Napirend"],["het","Hét"],["este","Este"],["beall","Beállítás"]].map(a=>
     '<button data-act="tab" data-v="'+a[0]+'"'+(view===a[0]?' aria-current="page"':"")+'>'+a[1]+(a[0]==="het"&&beh?'<span class="dot" aria-label="elmaradás"></span>':"")+(a[0]==="ma"&&S.timer&&view!=="ma"?'<span class="dot" style="background:var(--ok)" aria-label="fut az időmérő"></span>':"")+'</button>').join("");
   document.getElementById("app").innerHTML=({ma:viewMa,nap:viewNapirend,het:viewHet,este:viewEste,beall:viewBeall})[view]();
@@ -926,6 +970,14 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "pspecies":if(PETS[b.dataset.k]){S.settings.pet.species=b.dataset.k;save()}break;
     case "petpoke":petTrick("hearts");return;
     case "prename":petRename=true;break;
+    case "intro":introSaveName();introStep=+b.dataset.s;save();window.scrollTo(0,0);break;
+    case "introPick":introSaveName();S.settings.pet.on=true;S.settings.pet.species=b.dataset.k;save();break;
+    case "introNoPet":introSaveName();S.settings.pet.on=!S.settings.pet.on;save();break;
+    case "introdone":{introSaveName();const i=document.getElementById("intro-one"),v=b.dataset.one&&i?i.value.trim().slice(0,120):"";
+      if(S.settings.pet.on&&!S.settings.pet.name)S.settings.pet.name=PETS[S.settings.pet.species].def;
+      if(v){const d=today(),id=uid();S.tasks.push({id,date:d,title:v,mode:"munka",plan:+S.settings.focus||50,done:0,star:false,completed:false,postponed:0,blockId:null,proud:true});S.morning[d]={text:v,taskId:id}}
+      S.onboarded=true;introStep=0;view="ma";save();window.scrollTo(0,0);break}
+    case "introAgain":S.onboarded=false;introStep=0;save();window.scrollTo(0,0);break;
     case "pname":{const i=document.getElementById("pet-name"),v=i?i.value.trim().slice(0,20):"";S.settings.pet.name=v||PETS[S.settings.pet.species].def;petRename=false;
       flash="Üdvözölje "+S.settings.pet.name+" nevű új társát!";save();render();setTimeout(()=>petTrick("hearts"),400);return}
     case "mosave":{const i=document.getElementById("mo-text"),v=i?i.value.trim().slice(0,120):"",d=today();if(!v){if(i)i.focus();return}

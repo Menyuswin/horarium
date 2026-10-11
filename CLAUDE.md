@@ -29,6 +29,7 @@ Users say "horarium" or "hirarium" to start a development session on it.
 - `resizeBlock()` and `replanToday()`: duration buttons that push following blocks, and the re-plan of the rest of today.
 - `sessStats()`/`sessLessons()`: weekly statistics; lessons only with at least 8 rated blocks and a clear gap.
 - Pet: `PETS`, `petSvg()` (inline SVG, species, mood 0–4, level 0–6), `petPanel()`, `petTrick()` and CSS classes `t-<trick>`. Nothing is ever taken away from the pet.
+- `viewIntro()`: the first-visit guide (welcome, pet choice, four pages, first step). Shown while `S.onboarded` is false; old states with tasks or sessions count as onboarded.
 - `morningHtml()`, `dayStory()` (evening sentences, varied per day by `dayPick()`), export/import in the settings view.
 - `render()` rebuilds the view; the click handler at the bottom switches on `data-act`.
 
