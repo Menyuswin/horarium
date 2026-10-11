@@ -1,0 +1,14 @@
+const {chromium}=require('playwright-core');
+(async()=>{const b=await chromium.launch({executablePath:require('./env').CHROMIUM});const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+const pg=await b.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
+await pg.goto(require('./env').URL);await pg.evaluate(()=>{S.onboarded=true;S.settings.simple=false;S.settings.pet.name='B';save();render()});
+await pg.fill('#f-title','Ajánlat A');await pg.fill('#f-proj','Ügyfelek');await pg.click('[data-act="add"]');
+ok(await pg.evaluate(()=>S.tasks[0].project==='Ügyfelek')&&(await pg.textContent('#app')).includes('Munka · Ügyfelek'),'project saved and shown');
+ok(await pg.evaluate(()=>[...document.querySelectorAll('#projlist option')].map(o=>o.value).includes('Ügyfelek')),'datalist offers used name');
+const id=await pg.evaluate(()=>S.tasks[0].id);await pg.click('[data-act="open"][data-id="'+id+'"]');await pg.click('[data-act="edit"]');await pg.fill('#e-proj','Belső');await pg.click('[data-act="esave"]');
+ok(await pg.evaluate(()=>S.tasks[0].project==='Belső'),'project edited');
+await pg.click('[data-act="start"]');await pg.click('[data-act="go"]');await pg.evaluate(()=>{S.timer.startAt-=20*60000});await pg.click('[data-act="stop"]');await pg.click('[data-act="refl"][data-o="igen"]');
+ok(await pg.evaluate(()=>S.sessions[0].project==='Belső'),'session carries project');
+await pg.evaluate(()=>{for(let i=0;i<3;i++)S.sessions.push(Object.assign({},S.sessions[0],{id:'z'+i}));save()});
+await pg.click('[data-v="het"]');ok((await pg.textContent('#app')).includes('Projekt szerint')&&(await pg.textContent('#app')).includes('Belső'),'weekly table by project');
+ok(errs.length===0,'no page errors '+errs.join('|'));await b.close()})();

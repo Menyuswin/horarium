@@ -1,0 +1,228 @@
+{
+ "v": 2,
+ "updatedAt": 1791751743491,
+ "settings": {
+  "targets": {
+   "tanulas": {
+    "wd": 5,
+    "we": 2
+   },
+   "munka": {
+    "wd": 30,
+    "we": 0
+   },
+   "szabad": {
+    "wd": 7,
+    "we": 6
+   },
+   "pihenes": {
+    "wd": 15,
+    "we": 8
+   },
+   "edzes": {
+    "wd": 5,
+    "we": 2
+   }
+  },
+  "focus": 50,
+  "brk": 10,
+  "travel": 20,
+  "templates": {
+   "wd": [
+    {
+     "id": "mv4aq53xha26",
+     "start": "07:00",
+     "end": "08:00",
+     "title": "Tanulás",
+     "mode": "tanulas"
+    },
+    {
+     "id": "mv4aq53xto2x",
+     "start": "08:00",
+     "end": "09:00",
+     "title": "Reggeli, készülődés",
+     "mode": "pihenes"
+    },
+    {
+     "id": "mv4aq53x6d9y",
+     "start": "09:00",
+     "end": "12:30",
+     "title": "Munka",
+     "mode": "munka"
+    },
+    {
+     "id": "mv4aq53x7fwf",
+     "start": "12:30",
+     "end": "13:30",
+     "title": "Ebéd",
+     "mode": "pihenes"
+    },
+    {
+     "id": "mv4aq53xw1yw",
+     "start": "13:30",
+     "end": "16:30",
+     "title": "Munka",
+     "mode": "munka"
+    },
+    {
+     "id": "mv4aq53xdatl",
+     "start": "17:00",
+     "end": "18:00",
+     "title": "Edzés",
+     "mode": "edzes",
+     "kind": "edzes"
+    },
+    {
+     "id": "mv4aq53x49re",
+     "start": "18:30",
+     "end": "20:00",
+     "title": "Szabadprogram",
+     "mode": "szabad"
+    },
+    {
+     "id": "mv4aq53xpsn5",
+     "start": "20:00",
+     "end": "22:00",
+     "title": "Esti pihenés",
+     "mode": "pihenes"
+    }
+   ],
+   "we": [
+    {
+     "id": "mv4aq53x0jd7",
+     "start": "07:30",
+     "end": "08:30",
+     "title": "Reggeli, lassú indulás",
+     "mode": "pihenes"
+    },
+    {
+     "id": "mv4aq53x8jyg",
+     "start": "08:30",
+     "end": "10:30",
+     "title": "Tanulás",
+     "mode": "tanulas"
+    },
+    {
+     "id": "mv4aq53xb58c",
+     "start": "11:00",
+     "end": "12:00",
+     "title": "Edzés",
+     "mode": "edzes",
+     "kind": "edzes"
+    },
+    {
+     "id": "mv4aq53xnvcb",
+     "start": "12:30",
+     "end": "13:30",
+     "title": "Ebéd",
+     "mode": "pihenes"
+    },
+    {
+     "id": "mv4aq53xp7fb",
+     "start": "14:30",
+     "end": "18:30",
+     "title": "Szabadprogram",
+     "mode": "szabad"
+    },
+    {
+     "id": "mv4aq53xeywy",
+     "start": "19:00",
+     "end": "22:00",
+     "title": "Esti pihenés",
+     "mode": "pihenes"
+    }
+   ]
+  },
+  "pet": {
+   "on": true,
+   "species": "kutya",
+   "name": "Bodri"
+  },
+  "eq": {
+   "on": true,
+   "freq": "napi"
+  },
+  "simple": true
+ },
+ "tasks": [
+  {
+   "id": "mv4aq5f266oy",
+   "date": "2026-10-11",
+   "title": "Exportált feladat",
+   "mode": "munka",
+   "plan": 50,
+   "done": 0,
+   "star": false,
+   "completed": false,
+   "postponed": 0,
+   "blockId": null,
+   "project": ""
+  }
+ ],
+ "log": {},
+ "hourLog": {},
+ "reviews": {},
+ "timer": null,
+ "plan": {
+  "2026-10-11": {
+   "blocks": [
+    {
+     "id": "mv4aq5c58mqz",
+     "start": "07:30",
+     "end": "08:30",
+     "title": "Reggeli, lassú indulás",
+     "mode": "pihenes"
+    },
+    {
+     "id": "mv4aq5c5c4qq",
+     "start": "08:30",
+     "end": "10:30",
+     "title": "Tanulás",
+     "mode": "tanulas"
+    },
+    {
+     "id": "mv4aq5c5ndt1",
+     "start": "11:00",
+     "end": "12:00",
+     "title": "Edzés",
+     "mode": "edzes",
+     "kind": "edzes"
+    },
+    {
+     "id": "mv4aq5c5vk6n",
+     "start": "12:30",
+     "end": "13:30",
+     "title": "Ebéd",
+     "mode": "pihenes"
+    },
+    {
+     "id": "mv4aq5c5omc8",
+     "start": "14:30",
+     "end": "18:30",
+     "title": "Szabadprogram",
+     "mode": "szabad"
+    },
+    {
+     "id": "mv4aq5c55eyx",
+     "start": "19:00",
+     "end": "22:00",
+     "title": "Esti pihenés",
+     "mode": "pihenes"
+    }
+   ],
+   "workout": "",
+   "workoutDone": false
+  }
+ },
+ "sessions": [],
+ "reflect": null,
+ "petMins": 300,
+ "morning": {},
+ "onboarded": true,
+ "weekly": {},
+ "sug": {},
+ "feel": [],
+ "eqd": {},
+ "eqDone": 0,
+ "breaths": 0
+}

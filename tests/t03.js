@@ -1,0 +1,21 @@
+const {chromium}=require('playwright-core');
+(async()=>{
+const b=await chromium.launch({executablePath:require('./env').CHROMIUM});
+const pg=await b.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
+await pg.goto(require('./env').URL);await pg.evaluate(()=>{if(!S.onboarded){S.onboarded=true;S.settings.simple=false;save();render()}});
+const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+await pg.click('[data-v="het"]');
+ok((await pg.textContent('#app')).includes('Még kevés adat (0 blokk)'),'empty state');
+await pg.evaluate(()=>{const day=new Date();const at=(h)=>{const d=new Date(day);d.setHours(h,0,0,0);return d.getTime()-86400000};
+ const mk=(h,min,o,n,dis)=>({id:'s'+Math.random(),taskId:'x',title:'t',mode:'munka',planned:min,actual:min,start:at(h),end:at(h)+min*60000,intent:'',doneWhen:'',outcome:o,distraction:'',pauses:Array(n).fill({k:'zene',ms:1000}),distractions:dis||[]});
+ for(let i=0;i<5;i++)S.sessions.push(mk(9,25,'igen',0));
+ for(let i=0;i<4;i++)S.sessions.push(mk(14,90,'nem',2,[{type:'kulso',note:'a',at:1}]));
+ S.sessions.push(mk(9,25,'reszben',1));S.sessions.push(mk(14,90,'reszben',1));save();render()});
+const txt=await pg.textContent('#app');
+ok(/11 blokk/.test(txt)||/<b>11/.test(txt)||txt.includes('11 blokk'),'count 11');
+ok(txt.includes('Legfeljebb 30 perces')&&txt.includes('60 percnél hosszabb'),'length rows');
+ok(/blokkjaid sikerülnek a legjobban/.test(txt),'length lesson: '+(txt.match(/A\(z\)[^.]*\.[^.]*\./)||[''])[0]);
+ok(/Leginkább a következő időszakban sikerül a fókusz: reggel/.test(txt),'time-of-day lesson');
+ok(/külső eredetű/.test(txt),'distraction lesson');
+ok(errs.length===0,'no page errors '+errs.join('|'));
+await b.close()})();

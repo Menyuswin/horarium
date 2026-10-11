@@ -1,0 +1,14 @@
+const {chromium}=require('playwright-core');
+(async()=>{const b=await chromium.launch({executablePath:require('./env').CHROMIUM});const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+const pg=await b.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
+await pg.clock.install({time:new Date(2026,9,12,10,0,0)});
+await pg.goto(require('./env').URL);await pg.evaluate(()=>{S.onboarded=true;S.settings.pet.name='B';save();view='nap';render()});
+ok(await pg.$$eval('.tlt',l=>l.map(x=>x.textContent).filter(Boolean)).then(a=>a[0]==='07:00'&&a.includes('09:00')),'axis shows start times');
+const top1=await pg.$eval('.blk.now .nowline',e=>e.style.top);ok(/^2[89]/.test(top1),'line inside the current block near 29%: '+top1);
+ok((await pg.textContent('.nowline span'))==='10:00','line shows the time');
+await pg.clock.setFixedTime(new Date(2026,9,12,11,0,0));await pg.waitForTimeout(1500);
+ok((await pg.textContent('.nowline span'))==='11:00'&&(await pg.$eval('.blk.now .nowline',e=>e.style.top)).startsWith('57'),'line moves on its own');
+await pg.clock.setFixedTime(new Date(2026,9,12,16,40,0));await pg.evaluate(()=>render());
+ok(await pg.isVisible('.tlnow')&&!(await pg.$('.blk.now')),'between blocks: line in the gap');
+await pg.click('[data-act="pday"][data-d="2026-10-13"]');ok(!(await pg.$('.nowline')),'no line on another day');
+ok(errs.length===0,'no page errors '+errs.join('|'));await b.close()})();

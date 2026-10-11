@@ -1,0 +1,20 @@
+const {chromium}=require('playwright-core');
+(async()=>{const b=await chromium.launch({executablePath:require('./env').CHROMIUM});const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+const pg=await b.newPage({viewport:{width:390,height:800}});const errs=[];pg.on('pageerror',e=>errs.push(e.message));
+await pg.goto(require('./env').URL);await pg.evaluate(()=>{S.onboarded=true;S.settings.simple=false;S.settings.pet.name='Bodri';save();render()});
+await pg.fill('#f-title','Mély teszt');await pg.click('[data-act="add"]');await pg.click('[data-act="start"]');await pg.fill('#s-intent','Vázlat megírása');await pg.click('[data-act="go"]');
+await pg.click('[data-act="deepon"]');
+ok(await pg.isVisible('.deep')&&(await pg.textContent('.deep')).includes('Vázlat megírása'),'deep overlay with intent');
+await pg.waitForTimeout(700);ok(/\d\d:\d\d/.test(await pg.textContent('#d-time')),'big countdown runs: '+await pg.textContent('#d-time'));
+await pg.click('[data-act="amb"][data-k="eso"]');ok(await pg.evaluate(()=>ambKind==='eso'&&S.settings.ambient==='eso'),'rain sound on');
+await pg.click('[data-act="amb"][data-k="ocean"]');ok(await pg.evaluate(()=>ambKind==='ocean'),'switch to ocean');
+await pg.click('.deep [data-act="pause"]');ok(await pg.evaluate(()=>ambKind==='')&&(await pg.textContent('.deep')).includes('Szünetel'),'sound stops on pause');
+await pg.click('.deep [data-act="resume"]');ok(await pg.evaluate(()=>ambKind==='ocean'),'sound back on resume');
+// soft block
+await pg.evaluate(()=>{window.__h=false;Object.defineProperty(document,'hidden',{get:()=>window.__h,configurable:true})});
+await pg.evaluate(()=>{window.__h=true;document.dispatchEvent(new Event('visibilitychange'));S.timer.awayAt-=125000;window.__h=false;document.dispatchEvent(new Event('visibilitychange'))});
+ok((await pg.textContent('.deep')).includes('2 percig máshol jártál. Semmi baj, folytassuk.'),'kind away note');
+await pg.click('[data-act="deepoff"]');ok(!(await pg.isVisible('.deep'))&&await pg.evaluate(()=>ambKind===''),'exit deep stops sound');
+await pg.evaluate(()=>{S.timer.startAt-=10*60000});await pg.click('[data-act="stop"]');
+ok(await pg.evaluate(()=>S.sessions.slice(-1)[0].away>=125),'away seconds kept on session');
+ok(errs.length===0,'no page errors '+errs.join('|'));await b.close()})();

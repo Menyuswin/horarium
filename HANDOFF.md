@@ -37,7 +37,7 @@ Read this together with `CLAUDE.md` before changing anything. It records what th
 - Commit, push the session branch, then `git push origin HEAD:main`.
 - Check the Pages build with the GitHub MCP tool `actions_list` (workflow "pages build and deployment"); the session proxy blocks `github.io`, so the live page cannot be fetched directly.
 - Republish the artifact: `Artifact` publish with `url` https://claude.ai/artifact/QFrFrcGtYcUhtfj2gJkTaQ (read it first in a new session). It declares the `db`, `user` and `downloads` capabilities; keep them.
-- The test scripts (t1–t19) and screenshot helpers lived in the session scratchpad and are gone. Recreate the checks you need; the user may decide to keep tests in the repo.
+- The browser checks are in `tests/` (the user agreed to keep them in the repo); run `tests/run.sh` before every commit. Screenshot helpers and mockups were scratchpad-only and are gone.
 
 ## Open items
 

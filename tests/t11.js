@@ -1,0 +1,13 @@
+const {chromium}=require('playwright-core');
+(async()=>{const b=await chromium.launch({executablePath:require('./env').CHROMIUM});const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+const pg=await b.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
+await pg.goto(require('./env').URL);await pg.evaluate(()=>{S.onboarded=true;S.settings.pet.name='B';save();render()});
+await pg.fill('#f-title','Hossz teszt');await pg.click('[data-act="add"]');
+await pg.click('[data-act="start"]');ok(await pg.isVisible('[data-act="sdur"][data-m="50"][aria-pressed="true"]'),'default length preselected');
+await pg.click('[data-act="sdur"][data-m="90"]');await pg.click('[data-act="go"]');
+ok(await pg.evaluate(()=>S.timer.durMs===90*60000),'90 min chosen');
+await pg.click('[data-act="extend"]');ok(await pg.evaluate(()=>S.timer.durMs===100*60000&&S.timer.extended===10),'+10 extends');
+await pg.evaluate(()=>{S.timer.startAt-=5*60000});await pg.click('[data-act="stop"]');ok(await pg.evaluate(()=>S.sessions.slice(-1)[0].planned===100&&S.sessions.slice(-1)[0].extended===10),'session keeps extension');await pg.click('[data-act="rskip"]');
+await pg.click('[data-act="start"]');await pg.fill('#s-min','35');await pg.click('[data-act="go"]');
+ok(await pg.evaluate(()=>S.timer.durMs===35*60000),'custom 35 min');
+ok(errs.length===0,'no page errors '+errs.join('|'));await b.close()})();

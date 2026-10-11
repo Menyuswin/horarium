@@ -50,7 +50,7 @@ Read `HANDOFF.md` first: it holds the user's decisions, what is built, the deplo
 ## Checks before a commit
 
 - Syntax: extract the `<script>` block and run `node --check` on it.
-- Behaviour: headless Chromium with `playwright-core`. Keep test scripts in the session scratchpad, not in the repo. The existing checks cover alerts, countdowns and task editing.
+- Behaviour: headless Chromium with `playwright-core`. The checks live in `tests/` (one file per feature, `t01.js`…; `env.js` finds the app and Chromium). Run them all with `NODE_PATH=/opt/node-tools/node_modules tests/run.sh`; it lists every FAIL and exits non-zero. Add a new `tNN.js` for each new feature and keep the existing ones passing. Screenshots go to a temp folder, never into the repo.
 
 ## Git and publishing
 
