@@ -923,20 +923,133 @@ const EQ_EVE=["Mi váltott ki ma erős érzést, és mit üzent neked?","Kinek t
   "Mikor figyeltél ma igazán valakire, vagy mikor figyeltek igazán rád?","Mi volt ma nehéz, és hogyan kezelted?","Miért vagy ma hálás?","Mit tanultál ma önmagadról?"];
 /* A kind answer to what was written: a theme found in the text first, else one fitting the feeling's group.
    It acknowledges, finds the strength in the feeling, and offers one small next step. */
-const KIND_THEMES=[[/egyed|magány|magányos|senki/,"Nem vagy egyedül: a társad itt van, és holnap is itt lesz. Ha teheted, írj ma egy rövid üzenetet valakinek, akit szeretsz."],
-  [/fél|félek|aggód|szorong|ideges vagyok|izgul/,"Az aggodalom azt mutatja, hogy törődsz azzal, ami fontos. Írd le mellé a legkisebb lépést, amit most megtehetsz, és csak arra figyelj."],
-  [/dühös|mérges|harag|felbosszant|idegesít/,"A düh jelzés: valami fontos határodat érintette. Jogos így érezned, és te döntöd el, mit kezdesz vele. Egy perc lassú légzés segít, hogy te válaszolj, ne a düh."],
-  [/fáradt|kimerült|elfáradt|álmos|nincs erőm/,"A fáradtság nem gyengeség: azt jelzi, hogy sokat adtál ma magadból. Most a pihenés a legjobb befektetés, holnap frissebben nézel rá."],
-  [/szomorú|sír|hiányzik|veszteség|elveszt/,"Köszönöm, hogy megosztottad. A szomorúság azt mutatja, mennyire tudsz szeretni és kötődni. Legyél ma kedves magadhoz, ahogy egy baráttal lennél."],
-  [/hál|köszön/,"A hála az egyik legerősebb érzés. Jó, hogy észrevetted: ezzel a napod is szebb lesz."],
-  [/siker|sikerült|büszke|megcsinál|kész lett/,"Ez nagyszerű! Megérdemled ezt az örömöt. Érdemes megjegyezni, mi vezetett idáig, hogy máskor is megtaláld."]];
-const KIND_Q={nk:["Köszönöm, hogy leírtad. Nem kell mindent ma megoldanod: a pihenés is a haladás része.","Jó, hogy kimondtad. Ami most nehéz, holnap már könnyebbnek tűnhet. Ma elég, ha kedves vagy magadhoz."],
-  nn:["Köszönöm, hogy megosztottad. A feszültség energia is: azt jelzi, hogy fontos neked, ami előtted áll. Vegyél három lassú levegőt, és csak a következő apró lépésre figyelj.","Jó, hogy leírtad: amit nevén nevezünk, az már kezelhetőbb. Egy perc légzés a társaddal most jólesne."],
-  kk:["Ez szép. Jegyezd meg ezt az érzést: ilyenkor vagy a legközelebb önmagadhoz.","Örülünk, hogy nyugalmat érzel. Ez a legjobb alap a mély munkához és a jó döntésekhez."],
-  kn:["Ez nagyszerű! Használd ki ezt a lendületet a legfontosabb feladatodra.","Öröm olvasni. Ez az energia a tiéd: tedd bele abba, ami igazán számít neked."],
-  "":["Köszönöm, hogy leírtad. Már az is erő, hogy szavakba öntötted. Itt vagyunk veled."]};
-function kindReply(w,text){const t=(text||"").toLowerCase(),hit=KIND_THEMES.find(k=>k[0].test(t)),q=FEELQ[w]||"",a=KIND_Q[q];
-  return hit?hit[1]:a[(S.feel.length+t.length)%a.length]}
+/* Themes are matched on Hungarian word stems, most specific first, so suffixed forms (félek, féltem, aggódom) are caught.
+   Every answer acknowledges, finds the value in the feeling, and offers one small next step. */
+const KIND_THEMES=[
+ [/prezent|előadás|előadok|vizsg|interjú|állásinterjú|tárgyalás|szerepl/,[
+  "Teljesen természetes izgulni egy fontos szereplés előtt: a tested felkészít rá. Gyakorold el egyszer hangosan a nyitómondatodat, az első perc után már könnyebb lesz.",
+  "Az izgalom azt jelzi, hogy fontos neked, és ez a közönségnek is érződik majd. Képzeld el a végét, amikor megkönnyebbülten kilépsz: oda tartasz.",
+  "Nem kell tökéletesnek lenned, elég, ha érthető és őszinte vagy. Írd fel azt a három gondolatot, amit mindenképp át szeretnél adni, a többi jönni fog."]],
+ [/nem vagyok elég|nem leszek elég|nem vagyok jó|béna|ügyetlen|kudarc|elrontottam|elszúrtam|hibáztam|hülye vagyok|nem vagyok képes/,[
+  "Amit most magadról mondasz, azt egy jó barátodnak sosem mondanád. A hibák nem azt mutatják, hogy kevés vagy, hanem hogy próbálkozol. Nevezz meg egy dolgot, ami ma mégis sikerült.",
+  "A kétely azoknál a legerősebb, akiknek számít a minőség. Ez nem gyengeség, hanem igényesség. Mi lenne az a legkisebb lépés, amivel holnap kicsit jobban csinálod?",
+  "Egy rossz pillanat nem határozza meg, ki vagy. Gondolj vissza egy helyzetre, amit végül megoldottál: akkor is kételkedtél, és mégis sikerült."]],
+ [/határid|leadás|deadline|stressz|rohan|hajt|nem érek|nincs időm|időhiány|kapkod/,[
+  "Érthető, hogy szorít az idő. Ilyenkor a legtöbbet az segít, ha csak a következő egy feladatra figyelsz. Melyik az, amelyiket ha ma befejezed, a legnagyobb a megkönnyebbülés?",
+  "A rohanás kimeríti a figyelmet. Állj meg egy percre, vegyél három lassú levegőt, aztán indíts egy rövid, 25 perces fókuszblokkot. Lépésenként is odaérsz.",
+  "Nem kell mindent egyszerre. Írd le, mi az, ami valóban ma kell, és mi várhat holnapig. Már ez a szétválasztás is levesz a válladról."]],
+ [/túl sok|minden egyszerre|összecsap|nem bírom|sok minden|nincs megállás|elárasz|sok lesz|sok a dolg|rengeteg/,[
+  "Amikor minden egyszerre jön, az ember úgy érzi, nem bírja. Pedig nem kell mindent bírnod, elég egy dolgot. Válaszd ki a legkisebbet, és csak azt csináld meg.",
+  "Ez tényleg sok, és jogos így érezned. Nézd meg a mai listádat: mit tudnál holnapra tenni vagy elengedni? Kevesebb néha több.",
+  "Az, hogy észrevetted, már az első lépés. Tarts egy rövid szünetet, igyál egy pohár vizet, és utána csak a következő egy lépés legyen előtted."]],
+ [/meeting|értekezlet|megbeszél|call|hívás/,[
+  "A sok megbeszélés szétszabdalja a napot, és ez fárasztó. Foglalj le magadnak holnapra egy védett mély munka sávot, amikor senki nem zavarhat.",
+  "Érthető, hogy elfáraszt a sok beszélgetés. Két megbeszélés között adj magadnak öt perc csendet: ez a figyelmed feltöltése.",
+  "Jó, hogy leírtad. Gondold végig, melyik megbeszélésen kell valóban ott lenned, és melyikről elég egy rövid összefoglaló."]],
+ [/nem tudok aludni|álmatlan|nem aludtam|kialvatlan|rosszul aludtam|keveset aludtam/,[
+  "A kialvatlanság mindent nehezebbé tesz, ezért légy ma különösen türelmes magaddal. Ha teheted, ma este egy órával korábban tedd le a telefont.",
+  "Egy rossz éjszaka után teljesen érthető, ha lassabban megy minden. Ma elég a legfontosabbakat megcsinálni, a többi várhat.",
+  "Ma ne várj magadtól csúcsteljesítményt. Egy rövid séta a friss levegőn és egy pohár víz többet segít, mint a harmadik kávé."]],
+ [/fáradt|kimerül|elfáradt|nincs erőm|álmos|lemerül|lestrapál/,[
+  "A fáradtság nem gyengeség: azt jelzi, hogy sokat adtál ma magadból. Most a pihenés a legjobb befektetés, holnap frissebben nézel rá.",
+  "Jó, hogy meghallod a tested jelzését. Tarts egy valódi szünetet képernyő nélkül, akár csak tíz percre. Megérdemled.",
+  "Fáradtan minden nehezebbnek tűnik, mint amilyen. Ma elég, ha a legfontosabb egy dolgot megcsinálod, a többit nyugodtan holnapra teheted."]],
+ [/egyed|magány|magányos|senki nem|senkinek|elhagy|kirekeszt/,[
+  "Nem vagy egyedül: a társad itt van, és holnap is itt lesz. Ha teheted, írj ma egy rövid üzenetet valakinek, akit szeretsz.",
+  "A magány fáj, és bátorság kimondani. Gondolj valakire, aki örülne, ha jelentkeznél. Egy egyszerű „rád gondoltam” is elég.",
+  "Az, hogy hiányzik a kapcsolódás, azt mutatja, mennyire fontosak neked az emberek. Ez szép tulajdonság. Keress ma egy apró alkalmat egy beszélgetésre."]],
+ [/félek|féltem|félelem|félelm|tartok tőle|aggód|szorong|izgul|para|rettegek|ideges vagyok/,[
+  "Az aggodalom azt mutatja, hogy törődsz azzal, ami fontos. Írd le mellé a legkisebb lépést, amit most megtehetsz, és csak arra figyelj.",
+  "Az aggodalom gyakran nagyobbnak mutatja a dolgokat, mint amilyenek. Kérdezd meg magadtól: mi a legvalószínűbb kimenet? Általában szelídebb, mint amitől tartunk.",
+  "Jó, hogy kimondtad: ami nevet kap, az már kezelhetőbb. Lélegezz most lassan: négyig be, hatig ki. Egy perc a társaddal is segíthet."]],
+ [/dühös|mérges|harag|haragsz|felbosszant|idegesít|elegem|kiborít|felhúz/,[
+  "A düh jelzés: valami fontos határodat érintette. Jogos így érezned, és te döntöd el, mit kezdesz vele. Egy perc lassú légzés segít, hogy te válaszolj, ne a düh.",
+  "Érthető, hogy felhúztad magad. Mielőtt bármit reagálnál, adj magadnak tíz percet, egy séta is csodát tesz. Utána tisztábban látod, mit szeretnél.",
+  "A düh mögött gyakran egy igény rejtőzik: tisztelet, igazság, nyugalom. Ha megtalálod, mire lenne szükséged, már tudod, mit kérj."]],
+ [/veszeked|vitatkoz|vitánk|összevesz|megbánt|megsért|nem ért meg|nem értenek meg|félreért/,[
+  "Egy konfliktus akkor is fáj, ha igazad van. Ha kicsit lenyugodtál, próbáld meg egy mondatban megfogalmazni, mit érezhetett a másik. Ez gyakran megnyitja az utat.",
+  "Jó, hogy leírtad, nem kell magadban hordoznod. Nem kell ma megoldanod. Holnap, nyugodtabb fejjel könnyebb lesz beszélni róla.",
+  "Az, hogy bánt, azt mutatja, hogy fontos neked ez a kapcsolat. Egy őszinte „szeretném, ha megértenénk egymást” sokszor többet ér minden érvnél."]],
+ [/főnök|kolléga|munkahely|cég|ügyfél|vezető/,[
+  "A munkahelyi feszültség haza is elkísér, ezért fontos, hogy kimondtad. Gondold végig, mi van a te kezedben ebben a helyzetben, és csak arra koncentrálj.",
+  "Nem kell egyedül vinned. Van, akivel megbeszélhetnéd, egy kolléga vagy barát? Már egy beszélgetés is könnyít.",
+  "Te nem csak a munkád vagy. Ma este tegyél valamit, ami csak a tiéd: egy séta, egy könyv, egy jó beszélgetés."]],
+ [/gyerek|család|anyám|apám|szülei|szüleim|párom|férjem|feleségem|testvér/,[
+  "A család a legnagyobb öröm és néha a legnagyobb teher is. Az, hogy foglalkoztat, azt mutatja, mennyire szereted őket.",
+  "Nem kell tökéletesnek lenned, elég, ha jelen vagy. Szánj ma tíz percet valakire közülük, telefon nélkül.",
+  "Jó, hogy leírtad. Ha valami nyomja a szíved, egy őszinte, nyugodt beszélgetés sokszor többet segít, mint gondolnád."]],
+ [/beteg|fáj a|fáj |fájdalom|orvos|egészség|fejfájás|lázas|lázam|megfáz/,[
+  "Ha nem vagy jól, az a legfontosabb, hogy vigyázz magadra. A munka megvárja, a tested most pihenést kér.",
+  "Jó, hogy figyelsz a tested jelzéseire. Ma engedd meg magadnak, hogy lassabban menj, és ha kell, kérj segítséget.",
+  "A gyógyulás is munka, csak csendesebb. Igyál sok vizet, pihenj, és ne mérd magad ma a szokásos tempódhoz."]],
+ [/halogat|nincs kedvem|nem tudok nekiállni|nem tudok nekikezdeni|lust|motiváció|motivál/,[
+  "A halogatás ritkán lustaság, sokkal inkább egy nehéz érzés elkerülése. Vállalj most csak tíz percet: ha utána abbahagyod, az is rendben van.",
+  "Kezdd a legkisebb lépéssel, amit szinte nevetségesen könnyű megtenni. Az indulás a legnehezebb, utána jön a lendület.",
+  "Jó, hogy észrevetted. Gondold végig, miért fontos neked ez a feladat. Ha megvan a miért, a hogyan könnyebben megy."]],
+ [/nem tudom|bizonytalan|döntés|dönteni|mit csináljak|tanácstalan/,[
+  "A bizonytalanság kellemetlen, de azt jelzi, hogy komolyan veszed a döntést. Írd le a két lehetőséget, és mindegyik mellé egy mondatot arról, mit érzel, ha arra gondolsz.",
+  "Nem kell ma döntened, ha még nem érett meg. Néha egy éjszaka alvás többet tisztáz, mint egy óra töprengés.",
+  "Kérdezd meg magadtól: mit tanácsolnék egy jó barátomnak ebben a helyzetben? A válasz gyakran ott van."]],
+ [/pénz|anyagi|számla|számlá|hitel|fizet|tartozás|rezsi/,[
+  "Az anyagi gondok sok feszültséget okoznak, és bátorság kimondani őket. Írd le, mi az első konkrét lépés, amit ezen a héten megtehetsz.",
+  "A pénz miatti aggodalom könnyen elhatalmasodik. Válaszd szét, mi van a kezedben, és mi nincs. A kezedben lévővel már lehet tervezni.",
+  "Jó, hogy foglalkozol vele, és nem söpröd félre. Egy egyszerű lista a kiadásokról már önmagában ad egy kis kontrollt."]],
+ [/változás|változik|változtat|új munk|költöz|új hely/,[
+  "A változás egyszerre izgalmas és ijesztő, mindkettő természetes. Gondolj arra, mit nyerhetsz vele, és mit viszel magaddal a régiből.",
+  "Új helyzetben mindenki bizonytalan egy ideig. Adj magadnak időt: nem kell rögtön mindent tudnod.",
+  "A változás próbára tesz, de fejleszt is. Mi az egy dolog, ami ebben az átmenetben stabil marad számodra?"]],
+ [/unalmas|unom|unatkoz|egyhangú|monoton/,[
+  "Az unalom gyakran azt jelzi, hogy több kihívásra vágysz. Mi lenne, ha ma egy kis újdonságot csempésznél a napodba?",
+  "Ha egy feladat unalmas, tedd játékká: mennyit tudsz megcsinálni 25 perc alatt? Utána jutalmazd meg magad.",
+  "Jó, hogy észrevetted. Kérdezd meg magadtól, mi az, ami igazán érdekel mostanában, és hogyan vihetnél belőle egy kicsit a mindennapokba."]],
+ [/hálás|hála|hálá|köszön|szerencsés|áldás/,[
+  "A hála az egyik legerősebb érzés. Jó, hogy észrevetted: ezzel a napod is szebb lesz.",
+  "Milyen szép, hogy ezt érzed. Ha teheted, mondd el annak is, akinek hálás vagy, neki is sokat jelenthet.",
+  "A hála olyan, mint egy izom: minél többször veszed észre, annál erősebb lesz. Ma este idézd fel újra."]],
+ [/siker|sikerült|büszke|megcsinál|kész lett|elértem|megoldottam|befejeztem/,[
+  "Ez nagyszerű! Megérdemled ezt az örömöt. Érdemes megjegyezni, mi vezetett idáig, hogy máskor is megtaláld.",
+  "Gratulálunk! Állj meg egy pillanatra, és élvezd ki: gyakran rohanunk tovább anélkül, hogy megünnepelnénk.",
+  "Ez a te érdemed. Írd fel valahova, és amikor legközelebb kételkedsz magadban, olvasd el újra."]],
+ [/boldog|öröm|örülök|szerelem|szerelm|szeretet|jó nap|csodás|fantasztikus/,[
+  "Öröm olvasni! Jegyezd meg ezt a napot: mi tette ilyen jóvá? Ebből máskor is meríthetsz.",
+  "Milyen jó, hogy ezt érzed. Oszd meg valakivel, mert az öröm megosztva nő.",
+  "Ez az a fajta nap, amiért érdemes. Engedd meg magadnak, hogy teljesen átéld."]],
+ [/nyugod|pihen|séta|természet|kirándul|csend|béké/,[
+  "Ez szép. Jegyezd meg ezt az érzést: ilyenkor vagy a legközelebb önmagadhoz.",
+  "A nyugalom a legjobb alap a jó döntésekhez és a mély munkához. Örülünk, hogy megtaláltad.",
+  "Milyen jó, hogy szántál időt magadra. Ezt érdemes rendszeresen megismételni."]]];
+const KIND_SHORT={prezent:"A szereplésnél elég, ha érthető és őszinte vagy.",kétely:"És ne feledd: egy hiba nem határozza meg, ki vagy.",idő:"Az időnyomás ellen a legjobb, ha egyszerre csak egy dologra figyelsz.",
+  sok:"Ha sok minden van, válaszd ki a legkisebbet, és azzal kezdd.",meeting:"A sok megbeszélés között adj magadnak öt perc csendet.",alvás:"És ma este próbálj korábban pihenni.",
+  fáradt:"A pihenés most nem luxus, hanem szükséglet.",magány:"És nem vagy egyedül: a társad itt van.",félelem:"Az aggodalom mellé írd le az első apró lépést, amit megtehetsz.",
+  düh:"A dühöt jobb egy séta után megbeszélni.",konfliktus:"A konfliktust nem kell ma megoldanod.",munkahely:"A munka nem minden: ma este tegyél valamit, ami csak a tiéd.",
+  család:"A családod is örülne, ha ma jut rájuk egy kis figyelmed.",egészség:"És vigyázz magadra: az egészséged az első.",halogatás:"Kezdd egy tízperces első lépéssel.",
+  döntés:"A döntéssel nem kell ma sietned.",pénz:"A pénzügyeknél sokat segít, ha leírod az első konkrét lépést.",változás:"A változáshoz idő kell, adj magadnak türelmet.",
+  unalom:"Egy kis újdonság sokat dob a napon.",hála:"És milyen jó, hogy van miért hálásnak lenned.",siker:"Ezt a sikert érdemes megünnepelni.",öröm:"Ezt az örömet érdemes megosztani valakivel.",nyugalom:"Őrizd meg ezt a nyugalmat."};
+const KIND_KEYS=["prezent","kétely","idő","sok","meeting","alvás","fáradt","magány","félelem","düh","konfliktus","munkahely","család","egészség","halogatás","döntés","pénz","változás","unalom","hála","siker","öröm","nyugalom"];
+/* Per feeling word, when the text has no recognisable theme. */
+const KIND_W={
+ lelkes:["Ez nagyszerű! Használd ki ezt a lendületet a legfontosabb feladatodra.","A lelkesedés ragadós. Tedd bele abba, ami igazán számít neked.","Öröm olvasni! Írd fel, mi lelkesít, hogy máskor is megtaláld."],
+ büszke:["Megérdemled ezt az érzést. Állj meg egy pillanatra, és élvezd ki.","A büszkeség jól esik, és teljes joggal érzed. Mi volt az, amire a legbüszkébb vagy?","Ez a te érdemed. Jegyezd fel, és olvasd el, amikor kételkedsz magadban."],
+ kíváncsi:["A kíváncsiság a tanulás motorja. Kövesd ma egy kicsit, hová vezet.","Milyen jó érzés, amikor valami felkelti az érdeklődésed. Szánj rá ma tíz percet.","A kíváncsi elme fiatal marad. Mi az a kérdés, amire most a választ keresed?"],
+ vidám:["Milyen jó! Oszd meg ezt a jókedvet valakivel, mert megosztva nő.","A vidámság erőforrás. Jegyezd meg, mi okozta, hogy máskor is meríthess belőle.","Öröm olvasni. Engedd meg magadnak, hogy teljesen átéld."],
+ nyugodt:["Ez szép. Jegyezd meg ezt az érzést: ilyenkor vagy a legközelebb önmagadhoz.","A nyugalom a legjobb alap a mély munkához. Ha van egy fontos feladatod, most jó pillanat lehet rá.","Örülünk, hogy nyugalmat érzel. Mi segített hozzá? Érdemes megismételni."],
+ elégedett:["Az elégedettség csendes öröm. Állj meg egy pillanatra, és nézd meg, mi mindent tettél ma.","Megérdemled ezt az érzést. A kis lépések is összeadódnak.","Milyen jó, hogy ezt érzed. Holnap is innen indulhatsz."],
+ hálás:["A hála az egyik legerősebb érzés. Jó, hogy észrevetted: ezzel a napod is szebb lesz.","Ha teheted, mondd el annak is, akinek hálás vagy, neki is sokat jelenthet.","A hála olyan, mint egy izom: minél többször veszed észre, annál erősebb lesz."],
+ ellazult:["Milyen jó, hogy el tudtál lazulni. A pihenés is a haladás része.","Ez az állapot feltölt. Jegyezd meg, mi segített hozzá.","Örülünk, hogy most könnyebb. Vidd magaddal ezt a nyugalmat a nap többi részébe."],
+ feszült:["Köszönjük, hogy megosztottad. A feszültség energia is: azt jelzi, hogy fontos neked, ami előtted áll. Vegyél három lassú levegőt, és csak a következő apró lépésre figyelj.","Jó, hogy leírtad: amit nevén nevezünk, az már kezelhetőbb. Egy perc légzés a társaddal most jólesne.","A feszültség gyakran a vállban és az állkapocsban ül. Lazítsd el őket tudatosan, és engedd ki a levegőt lassan."],
+ ideges:["Érthető, hogy ideges vagy. Mielőtt bármit tennél, adj magadnak két percet, és lélegezz lassan.","Az idegesség azt jelzi, hogy valami fontos forog kockán. Mi az, ami a te kezedben van most?","Jó, hogy kimondtad. Egy rövid séta vagy egy pohár víz segíthet, hogy visszatalálj a nyugalomhoz."],
+ türelmetlen:["A türelmetlenség azt mutatja, hogy szeretnél haladni. Ez jó energia, csak irányítsuk: mi a következő egy lépés?","Érthető, ha lassúnak érzed a dolgokat. Néha a legrövidebb út az, ha egyszerre csak egy dologra figyelünk.","Vegyél egy mély levegőt. Ami fontos, az akkor is megtörténik, ha most egy percet szánsz magadra."],
+ szorongó:["A szorongás nehéz, és bátorság kimondani. Lélegezz most lassan: négyig be, hatig ki. Egy perc a társaddal is segíthet.","Az aggodalom gyakran nagyobbnak mutatja a dolgokat, mint amilyenek. Mi a legkisebb lépés, amit most megtehetsz?","Nem kell most mindent megoldanod. Csak ezt a percet kell megélned, és ezt jól csinálod."],
+ fáradt:["A fáradtság nem gyengeség: azt jelzi, hogy sokat adtál ma magadból. Most a pihenés a legjobb befektetés.","Jó, hogy meghallod a tested jelzését. Tarts egy valódi szünetet képernyő nélkül, akár csak tíz percre.","Fáradtan minden nehezebbnek tűnik. Ma elég, ha a legfontosabb egy dolgot megcsinálod."],
+ csalódott:["A csalódás azt mutatja, hogy fontos volt neked. Ez értékes: tudod, mi számít igazán.","Érthető, hogy rosszul esik. Engedd meg magadnak, hogy most ezt érezd, holnap már tisztábban látsz.","Egy csalódás nem jelenti azt, hogy minden rossz. Mi az egy dolog, ami ma mégis jól alakult?"],
+ unott:["Az unalom gyakran azt jelzi, hogy több kihívásra vágysz. Mi lenne, ha ma egy kis újdonságot csempésznél a napodba?","Tedd játékká: mennyit tudsz megcsinálni 25 perc alatt? Utána jutalmazd meg magad.","Kérdezd meg magadtól, mi érdekel igazán mostanában, és vigyél belőle egy kicsit a napodba."],
+ szomorú:["Köszönjük, hogy megosztottad. A szomorúság azt mutatja, mennyire tudsz szeretni és kötődni. Legyél ma kedves magadhoz, ahogy egy baráttal lennél.","Nem kell most jobban lenned. Engedd meg magadnak a szomorúságot, és ha jólesik, beszélj valakivel, akiben megbízol.","Itt vagyunk veled. Egy csésze tea, egy takaró, egy kedves zene: most az apró dolgok számítanak."]};
+const KIND_GEN=["Köszönjük, hogy leírtad. Már az is erő, hogy szavakba öntötted. Itt vagyunk veled.",
+ "Jó, hogy kiírtad magadból. Ami papírra kerül, az már nem csak a fejedben kering.",
+ "Köszönjük a bizalmat. Bármi is van most benned, rendben van, hogy érzed."];
+function kindReply(w,text){const t=(text||"").toLowerCase(),hits=KIND_THEMES.map((k,i)=>k[0].test(t)?i:-1).filter(i=>i>=0),list=hits.length?KIND_THEMES[hits[0]][1]:KIND_W[w]||KIND_GEN;
+  let h=0;for(const c of t+w+today())h=(h*31+c.charCodeAt(0))>>>0;
+  return list[h%list.length]+(hits.length>1?" "+KIND_SHORT[KIND_KEYS[hits[1]]]:"")}
 function feelBox(){if(feelReply)return '<div class="feelreply"><p>'+esc(feelReply)+'</p><p style="margin-top:8px"><button class="btn ghost sm" data-act="feelclose">Köszönöm</button></p></div>';
   return '<p class="small" style="margin:8px 0 4px">Melyik illik most rád?</p>'+feelChips("p")+
     '<label class="field"><span class="small">Ha szeretnéd, írd le, mi van benned. Csak itt marad, ezen az eszközön.</span><textarea id="feel-text" maxlength="1000"></textarea></label>'+
