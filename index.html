@@ -403,6 +403,9 @@ function logSession(t,min,endAt,outcome){if(min<1)return null;const task=find(t.
   const x={id:uid(),taskId:t.taskId,title:task?task.title:"",mode:task?task.mode:"",planned:Math.round(t.durMs/60000),actual:min,
     start:t.began||t.startAt,end:endAt,intent:t.intent||"",doneWhen:t.doneWhen||"",outcome:outcome||"",distraction:"",pauses:t.pauses||[],distractions:t.distractions||[]};
   S.sessions.push(x);const before=petLevel(S.petMins||0);S.petMins=(S.petMins||0)+min;const after=petLevel(S.petMins);
+  if(S.settings.pet.on&&x.planned>=5&&x.actual>=x.planned*.8){
+    S.petNote={at:Date.now(),text:petName()+(x.actual>=x.planned?" büszke: a blokk végig kitartott, pontosan annyi, amennyit tervezett.":" örül: a blokk nagyjából a tervezett ideig tartott.")};
+    setTimeout(()=>petTrick("hearts"),700)}
   if(after>before&&S.settings.pet.on)flash=petName()+" szintet lépett: "+PET_NAMES[after]+". Újdonság: "+PET_UNLOCK[after]+".";
   return x}
 function stopTimer(silent){const t=S.timer;if(!t)return;
@@ -652,6 +655,7 @@ function petPanel(){const c=S.settings.pet,m=S.petMins||0,lv=petLevel(m),mood=pe
   const un=PET_TRICKS.filter(x=>x[2]<=lv);
   return '<div class="panel pet-panel"><button class="pet-btn" data-act="petpoke" aria-label="Simogassa meg: '+esc(n)+'">'+petSvg(c.species,mood,lv)+'</button>'+
     '<div class="pet-info"><h3>'+esc(n)+'</h3><p class="small">'+esc(say)+'</p>'+
+    (S.petNote&&Date.now()-S.petNote.at<30*60000?'<p class="small" style="margin-top:6px"><b>'+esc(S.petNote.text)+'</b></p>':"")+
     '<p class="small muted" style="margin-top:6px">Szint '+lv+': '+PET_NAMES[lv]+'</p>'+
     '<div class="pbar" aria-hidden="true"><i style="width:'+(nx?Math.round((m-PET_LV[lv])/(nx-PET_LV[lv])*100):100)+'%"></i></div>'+
     '<p class="note muted">'+(nx?"Még "+fm(nx-m)+" fókusz a következő szintig. Újdonság: "+PET_UNLOCK[lv+1]+".":"Elérte a legmagasabb szintet.")+'</p>'+
@@ -665,6 +669,19 @@ const petReduced=()=>window.matchMedia&&window.matchMedia("(prefers-reduced-moti
 setInterval(()=>{if(document.hidden||petBusy||!S.settings.pet.on||petReduced()||petMood()===0||Math.random()>.28)return;
   const lv=petLevel(S.petMins||0),a=PET_TRICKS.filter(x=>x[2]<=lv);petTrick(a[Math.floor(Math.random()*a.length)][0])},3000);
 
+/* A few kind sentences about today, built only from today's own records. */
+function dayStory(){const d=today(),on=S.settings.pet.on,n=petName(),d0=parseD(d).getTime(),
+    ss=S.sessions.filter(x=>x.start>=d0&&x.start<d0+86400000&&x.actual>=1),mins=ss.reduce((a,x)=>a+x.actual,0),
+    done=S.tasks.filter(t=>t.date===d&&t.completed),open=S.tasks.filter(t=>t.date===d&&!t.completed),out=[];
+  if(!mins)out.push("Ma nem gyűlt fókuszidő, és ez rendben van. Nem minden nap egyforma, holnap új lehetőség."+(on?" "+n+" addig szunyókál egyet.":""));
+  else{out.push("Ma "+fm(mins)+" fókusz gyűlt össze "+ss.length+" blokkban."+(on?" "+n+" ezt nagyon értékeli.":""));
+    const best=ss.filter(x=>x.outcome==="igen").sort((a,b)=>b.actual-a.actual)[0];
+    if(best)out.push("A legjobb blokk: „"+best.title+"”, "+fm(best.actual)+(best.intent?". Így indította: „"+best.intent+"”":"")+".")}
+  if(done.length)out.push("Lezárt "+done.length+" feladatot.");
+  const dt=ss.reduce((a,x)=>a+(x.distractions||[]).length,0),dd=ss.reduce((a,x)=>a+(x.distractions||[]).filter(y=>y.taskId).length,0);
+  if(dt)out.push("A blokkok közben "+dt+" zavaró gondolatot írt le, és nem hagyta elveszni"+(dd?" ("+dd+" teendő lett belőle)":"")+".");
+  if(open.length)out.push("Nyitva maradt "+open.length+" feladat. Holnap egy kattintással áthozhatja őket.");
+  return out}
 /* ---------- focus-session statistics ---------- */
 /* Groups the last 28 days of sessions by block length and by part of the day.
    Success counts a "yes" as 1 and "partly" as 0.5; sessions without a reflection are left out of the rates. */
@@ -742,6 +759,9 @@ function viewHet(){const w=weekDates(),st=weekStatus();
 function viewEste(){const d=today(),r=S.reviews[d]||{};
   let h='<div class="head"><div><h1>Esti két perc</h1><p class="date">Három rövid válasz, hogy a holnap ne a nulláról induljon.</p></div></div>';
   if(flash){h+='<div class="alert" role="status" style="background:var(--soft);color:var(--ink)">'+esc(flash)+'</div>';flash=""}
+  const stp=dayStory().map(x=>'<p style="margin-bottom:6px">'+esc(x)+'</p>').join("");
+  h+=S.settings.pet.on?'<div class="panel pet-panel"><button class="pet-btn" data-act="petpoke" aria-label="Simogassa meg: '+esc(petName())+'">'+petSvg(S.settings.pet.species,petMood(),petLevel(S.petMins||0))+'</button><div class="pet-info"><h3>A mai nap</h3>'+stp+'</div></div>':
+    '<div class="panel"><h3>A mai nap</h3>'+stp+'</div>';
   const tl=S.log[d]||{},sum=MK.reduce((a,k)=>a+(tl[k]||0),0);
   h+='<p class="muted" style="margin-bottom:12px">Mai ráfordítás: '+(sum?MK.filter(k=>tl[k]).map(k=>MODES[k].toLowerCase()+" "+fm(tl[k])).join(", "):"még nincs rögzített idő")+'.</p>';
   h+='<div class="panel"><label class="field"><span>Mi ment jól ma?</span><textarea id="r-good" maxlength="600">'+esc(r.good||"")+'</textarea></label>'+
