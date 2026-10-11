@@ -255,8 +255,12 @@ let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,con
 /* Edit form for a task that is already on a day. Shown in place of its action row. */
 function taskForm(t){return '<div class="panel" style="margin-top:4px"><label class="field"><span class="small">Cím</span><input type="text" id="e-title" maxlength="120" value="'+esc(t.title)+'" autocomplete="off"></label>'+
   '<div class="modes" role="group" aria-label="Mód">'+MK.filter(k=>k!=="edzes").map(k=>'<button data-act="emode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(editMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
-  '<label class="field"><span class="small">Tervezett idő (perc)</span><input type="number" id="e-plan" min="5" max="600" step="5" inputmode="numeric" value="'+t.plan+'"></label>'+
+  '<label class="field"><span class="small">Tervezett idő (perc)</span><input type="number" id="e-plan" min="5" max="600" step="5" inputmode="numeric" value="'+t.plan+'"></label>'+projField("e-proj",t.project)+
   '<div class="row"><button class="btn sm" data-act="esave" data-id="'+t.id+'">Mentés</button><button class="btn ghost sm" data-act="ecancel">Mégse</button></div></div>'}
+/* Projects are free names on tasks; the field offers the names already in use. */
+function projNames(){return [...new Set(S.tasks.map(t=>t.project).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"hu"))}
+function projField(id,val){return '<label class="field"><span class="small">Projekt (nem kötelező)</span><input type="text" id="'+id+'" list="projlist" maxlength="40" value="'+esc(val||"")+'" placeholder="pl. Ajánlatok" autocomplete="off"></label>'+
+  '<datalist id="projlist">'+projNames().map(n=>'<option value="'+esc(n)+'">').join("")+'</datalist>'}
 try{const raw=localStorage.getItem(KEY);if(raw)S=normalize(JSON.parse(raw))}catch(e){}
 
 /* ---------- dates & time ---------- */
@@ -429,7 +433,7 @@ function resumeTimer(){const t=S.timer;if(!t||!t.pausedAt)return;const n=Date.no
   t.startAt+=len;const p=(t.pauses||[]).slice(-1)[0];if(p)p.ms=len;t.pausedAt=null;save();render()}
 /* One finished focus block becomes one record; the reflection fills in the outcome afterwards. */
 function logSession(t,min,endAt,outcome){if(min<1)return null;const task=find(t.taskId);
-  const x={id:uid(),taskId:t.taskId,title:task?task.title:"",mode:task?task.mode:"",planned:Math.round(t.durMs/60000),actual:min,extended:t.extended||0,away:Math.round((t.away||0)/1000),
+  const x={id:uid(),taskId:t.taskId,title:task?task.title:"",mode:task?task.mode:"",project:task&&task.project||"",planned:Math.round(t.durMs/60000),actual:min,extended:t.extended||0,away:Math.round((t.away||0)/1000),
     start:t.began||t.startAt,end:endAt,intent:t.intent||"",doneWhen:t.doneWhen||"",outcome:outcome||"",distraction:"",pauses:t.pauses||[],distractions:t.distractions||[]};
   S.sessions.push(x);const before=petLevel(S.petMins||0);S.petMins=(S.petMins||0)+min;const after=petLevel(S.petMins);
   if(S.settings.pet.on&&x.planned>=5&&x.actual>=x.planned*.8){
@@ -461,7 +465,7 @@ function taskHtml(t,isToday){const run=S.timer&&S.timer.taskId===t.id&&S.timer.p
   let h='<li class="task'+(t.completed?" done":"")+'" style="--c:var(--'+t.mode+')"><div class="top">'+
     '<button class="check" data-act="done" data-id="'+t.id+'" aria-label="'+(t.completed?"Visszaállítom":"Kész")+'"><span>'+(t.completed?"✓":"")+'</span></button>'+
     '<button class="body" data-act="open" data-id="'+t.id+'" aria-expanded="'+(openId===t.id)+'"><span class="title">'+(t.star?"★ ":"")+esc(t.title)+'</span>'+
-    '<span class="meta"><em>'+MODES[t.mode]+'</em>, '+fm(t.plan)+' tervezve'+(t.done?", "+fm(t.done)+" ráfordítva":"")+
+    '<span class="meta"><em>'+MODES[t.mode]+'</em>'+(t.project?' · '+esc(t.project):"")+', '+fm(t.plan)+' tervezve'+(t.done?", "+fm(t.done)+" ráfordítva":"")+
     (t.postponed?' <span class="'+(late?"late":"")+'">· '+t.postponed+'× halasztva</span>':"")+'</span></button>';
   if(isToday&&!t.completed&&!run)h+='<button class="play" data-act="start" data-id="'+t.id+'" aria-label="Fókuszblokk indítása">▶</button>';
   h+='</div>';
@@ -577,7 +581,7 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
     '<label class="field"><span>Mit szeretne elvégezni?</span><input type="text" id="f-title" maxlength="120" placeholder="pl. MIT-jegyzet 3. fejezete" autocomplete="off"></label>'+
     '<div class="modes" role="group" aria-label="Mód">'+MK.map(k=>'<button data-act="fmode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(formMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
     '<div class="row chips" role="group" aria-label="Időtartam" style="margin-bottom:12px">'+[25,50,100].map(m=>'<button data-act="fplan" data-m="'+m+'" aria-pressed="'+(formPlan===m)+'">'+fm(m)+'</button>').join("")+
-    '<input type="number" id="f-plan" min="5" max="600" step="5" inputmode="numeric" aria-label="Egyéni időtartam percben" placeholder="perc" value="'+([25,50,100].includes(formPlan)?"":formPlan)+'"></div>'+
+    '<input type="number" id="f-plan" min="5" max="600" step="5" inputmode="numeric" aria-label="Egyéni időtartam percben" placeholder="perc" value="'+([25,50,100].includes(formPlan)?"":formPlan)+'"></div>'+projField("f-proj","")+
     '<button class="btn" data-act="add">Feladat felvétele</button></div>';
   return h}
 
@@ -868,7 +872,11 @@ function sessHtml(){const st=sessStats();let h='<h2>Fókuszmenetek (elmúlt 28 n
   else h+='<p class="muted small" style="margin-bottom:10px">Tanulság akkor jelenik meg, ha legalább 8 blokkot értékelt, és az egyes csoportok között látszik különbség. Most '+st.rated+' értékelt blokk van.</p>';
   const rows=g=>g.filter(x=>x.n).map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+x.n+'</td><td>'+(x.rate===null?"–":Math.round(x.rate*100)+"%")+'</td><td>'+x.ints.toLocaleString("hu-HU",{maximumFractionDigits:1})+'</td></tr>').join("");
   const tb=(t,g)=>'<p class="small" style="margin:8px 0 4px"><b>'+t+'</b></p><table class="small" style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left"><th>Csoport</th><th>Blokk</th><th>Sikerült</th><th>Megszakítás/blokk</th></tr></thead><tbody>'+rows(g)+'</tbody></table>';
-  return h+tb("Blokkhossz szerint",st.byLen)+tb("Napszak szerint",st.byDay)+'</div>'}
+  const pn=[...new Set(st.list.map(x=>x.project).filter(Boolean))];
+  const byProj=pn.length?sessGroup(st.list,pn.map(n=>[n,n,v=>v===n]),x=>x.project).sort((a,b)=>b.mins-a.mins):[];
+  return h+tb("Blokkhossz szerint",st.byLen)+tb("Napszak szerint",st.byDay)+
+    (byProj.length?'<p class="small" style="margin:8px 0 4px"><b>Projekt szerint</b></p><table class="small" style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left"><th>Projekt</th><th>Fókusz</th><th>Blokk</th><th>Sikerült</th></tr></thead><tbody>'+
+      byProj.map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+fm(x.mins)+'</td><td>'+x.n+'</td><td>'+(x.rate===null?"–":Math.round(x.rate*100)+"%")+'</td></tr>').join("")+'</tbody></table>':"")+'</div>'}
 function viewHet(){const w=weekDates(),st=weekStatus();
   let h='<div class="head"><div><h1>Heti mérleg</h1><p class="date">'+shortDate(w[0])+" – "+shortDate(w[6])+'</p></div></div>';
   const beh=st.filter(x=>x.behind);
@@ -993,6 +1001,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "esave":{if(!t)return;const ti=document.getElementById("e-title"),pi=document.getElementById("e-plan"),title=ti.value.trim();
       if(!title){ti.focus();return}
       t.title=title;t.mode=editMode;t.plan=Math.min(600,Math.max(5,Math.round(+pi.value||t.plan)));
+      const pj=document.getElementById("e-proj");t.project=pj?pj.value.trim().slice(0,40):(t.project||"");
       if(t.mode==="munka")t.star=false;
       editId=null;save();break}
     case "fmode":{formMode=b.dataset.k;document.querySelectorAll('[data-act="fmode"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===formMode));return}
@@ -1001,7 +1010,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "add":{const ti=document.getElementById("f-title"),pi=document.getElementById("f-plan"),title=ti.value.trim();
       if(!title){ti.focus();return}
       const plan=Math.min(600,Math.max(5,Math.round(+pi.value||formPlan||50)));
-      S.tasks.push({id:uid(),date:ymd(addDays(new Date(),dayOff)),title,mode:formMode,plan,done:0,star:false,completed:false,postponed:0,blockId:null});save();break}
+      const pj=document.getElementById("f-proj"),project=pj?pj.value.trim().slice(0,40):"";
+      S.tasks.push({id:uid(),date:ymd(addDays(new Date(),dayOff)),title,mode:formMode,plan,done:0,star:false,completed:false,postponed:0,blockId:null,project});save();break}
     case "done":if(!t)return;
       if(!t.completed){t.completed=true;const diff=t.plan-(t.done||0);
         if(diff>0){credit(t,diff);t.auto={min:diff,date:today()}}
