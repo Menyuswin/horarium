@@ -240,7 +240,7 @@ function defTemplates(){return{
 function defTargets(){return{tanulas:{wd:5,we:2},munka:{wd:30,we:0},szabad:{wd:7,we:6},pihenes:{wd:15,we:8},edzes:{wd:5,we:2}}}
 function defaults(){return{v:2,updatedAt:0,
   settings:{targets:defTargets(),focus:50,brk:10,travel:20,templates:defTemplates(),pet:{on:true,species:"kutya",name:""}},
-  tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{},sessions:[],reflect:null,petMins:0,morning:{},onboarded:false,weekly:{}}}
+  tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{},sessions:[],reflect:null,petMins:0,morning:{},onboarded:false,weekly:{},sug:{}}}
 function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=d.settings||{};
   const s=Object.assign(b,d);s.v=2;
   s.settings=Object.assign(b.settings,ds);
@@ -251,7 +251,7 @@ function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=
   s.settings.templates=(tp&&Array.isArray(tp.wd)&&Array.isArray(tp.we))?tp:defTemplates();
   s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.hourLog=d.hourLog||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};s.sessions=Array.isArray(d.sessions)?d.sessions:[];s.reflect=d.reflect||null;s.petMins=Math.max(0,+d.petMins||0);
   s.settings.pet=Object.assign({on:true,species:"kutya",name:""},ds.pet||{});
-  s.morning=d.morning&&typeof d.morning==="object"?d.morning:{};s.weekly=d.weekly&&typeof d.weekly==="object"?d.weekly:{};
+  s.morning=d.morning&&typeof d.morning==="object"?d.morning:{};s.weekly=d.weekly&&typeof d.weekly==="object"?d.weekly:{};s.sug=d.sug&&typeof d.sug==="object"?d.sug:{};
   s.onboarded=d.onboarded!==undefined?!!d.onboarded:!!((Array.isArray(d.tasks)&&d.tasks.length)||(Array.isArray(d.sessions)&&d.sessions.length));
   if(["kutya","macska","nyul","horcsog","felho","moha"].indexOf(s.settings.pet.species)<0)s.settings.pet.species="kutya";
   s.settings.pet.name=String(s.settings.pet.name||"").slice(0,20);return s}
@@ -295,6 +295,7 @@ function save(){S.updatedAt=Date.now();
   for(const k of Object.keys(S.hourLog))if(k<cut)delete S.hourLog[k];
   for(const k of Object.keys(S.plan))if(k<cut)delete S.plan[k];
   for(const k of Object.keys(S.morning||{}))if(k<cut)delete S.morning[k];
+  for(const k of Object.keys(S.sug||{}))if(k<cut)delete S.sug[k];
   const cutMs=addDays(new Date(),-90).getTime();S.sessions=S.sessions.filter(x=>x.start>=cutMs);
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
   if(dbDoc){dbDirty=true;clearTimeout(dbTimer);dbTimer=setTimeout(pushDb,900)}}
@@ -562,7 +563,7 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
       (focus&&capOpen?'<div class="panel" style="margin-bottom:14px"><label class="field"><span class="small">Mi jött közbe?</span><input type="text" id="c-note" maxlength="200" autocomplete="off"></label>'+
         '<label class="field"><span class="small">Honnan jött?</span><select id="c-type"><option value="belso">Belső (gondolat, éhség, unalom)</option><option value="kulso">Külső (értesítés, ember, hívás)</option></select></label>'+
         '<div class="row"><button class="btn sm" data-act="capsave">Rögzítem</button><button class="btn ghost sm" data-act="capsave" data-todo="1">Rögzítem, és legyen belőle teendő</button><button class="btn ghost sm" data-act="cap">Bezárom</button></div></div>':"")}
-  if(isToday)h+=morningHtml();
+  if(isToday)h+=morningHtml()+suggestHtml();
   if(isToday&&S.settings.pet.on)h+=petPanel();
   if(isToday)h+=nowPanel();
   h+='<div class="row" style="justify-content:space-between"><div class="days" role="group" aria-label="Nap">'+
@@ -844,6 +845,30 @@ function viewIntro(){const c=S.settings.pet,n=petName(),last=INTRO_PAGES.length+
     '<p class="muted small" style="margin-top:10px;text-align:center">Kihagyhatja, a kérdés reggelente a Ma nézetben is megjelenik.</p>';
   return h+'</div>'}
 function introSaveName(){const i=document.getElementById("intro-name");if(i)S.settings.pet.name=i.value.trim().slice(0,20)}
+/* ---------- deep work suggestion ---------- */
+/* The best part of the day: from rated sessions when they show a clear winner, else from where focus minutes went. */
+function bestPart(){const st=sessStats(),a=st.byDay.filter(x=>x.rated>=3).sort((x,y)=>y.rate-x.rate);
+  if(a.length>=2&&a[0].rate-a[1].rate>=.15)return a[0].k;
+  const hb={reggel:0,delutan:0,este:0};Object.keys(S.hourLog).forEach(d=>Object.keys(S.hourLog[d]).forEach(h=>{const x=+h;hb[x>=5&&x<=11?"reggel":x>=12&&x<=16?"delutan":"este"]+=S.hourLog[d][h]}));
+  const k=Object.keys(hb).sort((x,y)=>hb[y]-hb[x])[0];return hb[k]>=60?k:""}
+/* Up to two open tasks of today without a block, the one thing and starred first, placed in upcoming blocks with room, best part of day first. */
+function suggestDeep(){const d=today(),p=ensurePlan(d),n=new Date(),nm=n.getHours()*60+n.getMinutes(),bp=bestPart();
+  const part=m=>{const h=Math.floor(m/60);return h>=5&&h<=11?"reggel":h>=12&&h<=16?"delutan":"este"};
+  const free={};p.blocks.forEach(b=>{if(b.kind==="edzes"||b.mode==="pihenes")return;const s0=Math.max(nm,tm(b.start)),len=tm(b.end)-s0;
+    if(len>0)free[b.id]=len-S.tasks.filter(t=>t.date===d&&t.blockId===b.id&&!t.completed).reduce((a,t)=>a+Math.max(0,t.plan-(t.done||0)),0)});
+  const ids=p.blocks.map(b=>b.id),open=S.tasks.filter(t=>t.date===d&&!t.completed&&(!t.blockId||!ids.includes(t.blockId))&&t.plan-(t.done||0)>=25)
+    .sort((a,b)=>(b.proud?2:0)+(b.star?1:0)-((a.proud?2:0)+(a.star?1:0))||b.plan-a.plan).slice(0,2);
+  const blocks=p.blocks.filter(b=>free[b.id]>0).sort((a,b)=>(part(tm(b.start))===bp)-(part(tm(a.start))===bp)||tm(a.start)-tm(b.start));
+  const out=[];open.forEach(t=>{const need=Math.min(t.plan-(t.done||0),+S.settings.focus||50);
+    const g=blocks.find(b=>free[b.id]>=need&&(b.mode===t.mode||!b.mode))||blocks.find(b=>free[b.id]>=need);
+    if(g){free[g.id]-=need;out.push({t,b:g,best:bp&&part(tm(g.start))===bp})}});
+  return{out,bp}}
+function suggestHtml(){const d=today();if(S.sug[d]||new Date().getHours()>=15)return"";const r=suggestDeep();if(!r.out.length)return"";
+  const lab={reggel:"délelőtt",delutan:"délután",este:"este"};
+  return '<div class="panel" style="margin-bottom:14px"><h3>Javaslat a mai mély munkára</h3>'+
+    (r.bp?'<p class="small muted" style="margin:4px 0 8px">Az eddigi adatai szerint '+lab[r.bp]+' megy a legjobban a fókusz.</p>':'<p class="small muted" style="margin:4px 0 8px">A legkorábbi szabad, illő sávokat ajánlom.</p>')+
+    '<ul class="small" style="margin:0 0 10px 18px">'+r.out.map(x=>'<li><b>'+esc(x.t.title)+'</b> → '+x.b.start+'–'+x.b.end+' '+esc(x.b.title)+(x.best?' <span class="muted">(a legjobb napszakában)</span>':'')+'</li>').join("")+'</ul>'+
+    '<div class="row"><button class="btn sm" data-act="sugok">Beosztom</button><button class="btn ghost sm" data-act="sugno">Most nem</button></div></div>'}
 /* ---------- week review and month ---------- */
 /* Three questions for the week, kept per Monday; last week's "what will you change" is shown as a reminder. */
 function weekReviewHtml(){const w=weekDates(),k=w[0],r=S.weekly[k]||{},prev=S.weekly[ymd(addDays(parseD(k),-7))],dow=(new Date().getDay()+6)%7;
@@ -1059,6 +1084,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "pspecies":if(PETS[b.dataset.k]){S.settings.pet.species=b.dataset.k;save()}break;
     case "petpoke":petTrick("hearts");return;
     case "prename":petRename=true;break;
+    case "sugok":{const r=suggestDeep();r.out.forEach(x=>{x.t.blockId=x.b.id});S.sug[today()]="ok";flash=r.out.length+" feladat bekerült a napirendbe.";save();break}
+    case "sugno":S.sug[today()]="skip";save();break;
     case "wsave":{const k=weekDates()[0],g=id=>{const e=document.getElementById(id);return e?e.value.trim():""};
       S.weekly[k]={good:g("w-good").slice(0,600),block:g("w-block").slice(0,600),change:g("w-change").slice(0,160),saved:Date.now()};flash="Heti visszatekintés mentve.";save();break}
     case "intro":introSaveName();introStep=+b.dataset.s;save();window.scrollTo(0,0);break;
