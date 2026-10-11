@@ -2,6 +2,7 @@
 
 Hungarian day-focus app: a single static file, `index.html`, no build step, no dependencies beyond Google Fonts.
 Users say "horarium" or "hirarium" to start a development session on it.
+Read `HANDOFF.md` first: it holds the user's decisions, what is built, the deployment workflow and the open items.
 
 ## Where things live
 
