@@ -14,6 +14,8 @@ Users say "horarium" or "hirarium" to start a development session on it.
 
 - Local storage key `horarium-v1`. When the Claude `db` capability is available, the state is also synced to the user's document. `normalize()` must keep old saved states loading, so add new settings with defaults there, not by assuming they exist.
 - Settings live in `S.settings`: targets, focus and break lengths, travel minutes, the weekday and weekend templates, and `alerts` (off by default).
+- `S.sessions`: one record per finished focus block (planned and actual minutes, intent, done condition, outcome, pauses, distractions). Kept 90 days; the weekly statistics and the evening story read it.
+- `S.settings.pet` (`on`, `species`, `name`) and `S.petMins` (total focus minutes, sets the pet level). `S.morning[date]` holds the morning answer (`text`, `taskId`) or `skip`.
 
 ## Structure of the script
 
@@ -23,6 +25,11 @@ Users say "horarium" or "hirarium" to start a development session on it.
 - `alertsDue()` runs every 15 s and fires sound and notifications for blocks that start or end. `tick()` handles the focus timer.
 - `countdown()` updates the two live countdowns, once per second.
 - `taskHtml()` and `taskForm()`: task rows, their details panel and the edit form.
+- `pauseTimer()`/`resumeTimer()` shift `startAt` so a paused block keeps its remaining time; `logSession()` writes the session record and credits the pet.
+- `resizeBlock()` and `replanToday()`: duration buttons that push following blocks, and the re-plan of the rest of today.
+- `sessStats()`/`sessLessons()`: weekly statistics; lessons only with at least 8 rated blocks and a clear gap.
+- Pet: `PETS`, `petSvg()` (inline SVG, species, mood 0–4, level 0–6), `petPanel()`, `petTrick()` and CSS classes `t-<trick>`. Nothing is ever taken away from the pet.
+- `morningHtml()`, `dayStory()` (evening sentences, varied per day by `dayPick()`), export/import in the settings view.
 - `render()` rebuilds the view; the click handler at the bottom switches on `data-act`.
 
 ## Writing rules
