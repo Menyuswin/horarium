@@ -286,6 +286,33 @@ function blockSpan(d,b,delta){const p=ensurePlan(d),len=tm(b.end)-tm(b.start),pa
   const s=Math.min(1439-pad-len,Math.max(pad,tm(b.start)+delta));return[s,s+len]}
 function moveBlock(d,bid,delta){const p=ensurePlan(d),b=p.blocks.find(x=>x.id===bid);if(!b)return;
   const[s,e]=blockSpan(d,b,delta);b.start=hm(s);b.end=hm(e);sortBlocks(p.blocks)}
+/* Resize a block by changing its end. Growing pushes the following blocks that would overlap, keeping their lengths;
+   shrinking just leaves a gap. Returns a short message for the user. */
+function resizeBlock(d,bid,delta){const p=ensurePlan(d),bl=p.blocks;sortBlocks(bl);const i=bl.findIndex(x=>x.id===bid);if(i<0)return"";
+  const padOf=c=>(c.kind==="edzes"&&p.workout==="uszas")?CHANGE+(+S.settings.travel||0):0;
+  const b=bl[i],s0=tm(b.start),ne=tm(b.end)+delta;
+  if(ne-s0<10)return"A sáv legalább 10 perces marad.";
+  if(ne+padOf(b)>1439)return"Nem fér be: a sáv az éjfélnél tovább tartana.";
+  const moves=[];let end=ne;
+  if(delta>0)for(let j=i+1;j<bl.length;j++){const c=bl[j],cs=tm(c.start),len=tm(c.end)-cs;if(cs>=end)break;
+    if(end+len+padOf(c)>1439)return"Nem fér be: a következő sávok az éjfélen túlnyúlnának.";
+    moves.push([c,end,end+len]);end+=len}
+  b.end=hm(ne);moves.forEach(m=>{m[0].start=hm(m[1]);m[0].end=hm(m[2])});
+  return moves.length?"A következő "+moves.length+" sáv később kezdődik, hogy ne ütközzön.":""}
+/* Re-plan the rest of today: open tasks left in blocks that already ended move to the next suitable block,
+   then the remaining time is compared with what the open tasks still ask for. The tone stays neutral on purpose. */
+function replanToday(){const d=today(),p=ensurePlan(d),n=new Date(),nm=n.getHours()*60+n.getMinutes();
+  const bl=p.blocks.filter(b=>b.kind!=="edzes");sortBlocks(bl);
+  const ended=new Set(bl.filter(b=>tm(b.end)<=nm).map(b=>b.id)),up=bl.filter(b=>tm(b.end)>nm);
+  const stray=S.tasks.filter(t=>t.date===d&&!t.completed&&ended.has(t.blockId));let moved=0,loose=0;
+  stray.forEach(t=>{const g=up.find(b=>b.mode===t.mode)||up.find(b=>b.mode&&b.mode!=="pihenes");
+    if(g){t.blockId=g.id;moved++}else{t.blockId=null;loose++}});
+  const avail=up.reduce((a,b)=>a+Math.max(0,tm(b.end)-Math.max(nm,tm(b.start))),0),
+    need=S.tasks.filter(t=>t.date===d&&!t.completed).reduce((a,t)=>a+Math.max(0,t.plan-(t.done||0)),0);
+  let m=moved||loose?(moved?moved+" feladat átkerült a hátralévő sávokba. ":"")+(loose?loose+" feladat sáv nélkül maradt, mert ma már nincs több megfelelő sáv. ":""):"Minden a helyén van, nincs mit átrendezni. ";
+  m+="A hátralévő sávokban "+fm(avail)+" van, a nyitott feladatok "+fm(need)+" időt kérnek.";
+  if(need>avail)m+=" A különbség "+fm(need-avail)+". Nem kell mindent ma megcsinálni, a „Holnapra” gombbal néhányat elengedhet.";
+  return m}
 /* Dragging by the grip: 1.5 px per minute, snapped to 5 minutes. The block follows the pointer and is saved on release. */
 const DRAG_PX=1.5;
 let drag=null;
@@ -433,6 +460,8 @@ function addBlockBtns(scope){const bl=getBlocks(scope);
 function workoutSeg(d,cur){return '<div class="seg" role="group" aria-label="Edzés fajtája">'+Object.keys(WORKOUTS).map(v=>
   '<button data-act="wset" data-d="'+d+'" data-v="'+v+'" aria-pressed="'+(cur===v)+'">'+WORKOUTS[v]+'</button>').join("")+'</div>'}
 function gripHtml(d,b){return '<button class="grip" data-grip="1" data-d="'+d+'" data-bid="'+b.id+'" aria-label="Húzza az áthelyezéshez">⋮⋮</button>'}
+function durRow(d,b){return '<div class="row" role="group" aria-label="Időtartam" style="margin-top:8px"><span class="small muted">Időtartam:</span>'+
+  [[-15,"−15 p"],[-5,"−5 p"],[5,"+5 p"],[15,"+15 p"]].map(x=>'<button class="btn ghost sm" data-act="bdur" data-d="'+d+'" data-bid="'+b.id+'" data-m="'+x[0]+'">'+x[1]+'</button>').join("")+'</div>'}
 function moveRow(d,b){return '<div class="row" role="group" aria-label="Áthelyezés" style="margin-top:8px"><span class="small muted">Áthelyezés:</span>'+
   [[-60,"−1 ó"],[-30,"−30 p"],[30,"+30 p"],[60,"+1 ó"]].map(x=>'<button class="btn ghost sm" data-act="bmove" data-d="'+d+'" data-bid="'+b.id+'" data-m="'+x[0]+'">'+x[1]+'</button>').join("")+'</div>'}
 
@@ -523,13 +552,13 @@ function blockHtml(x,d,p){const b=x.b;
     else if(wk==="nincs")h+='<p class="cap">Ma pihenőnap, az edzés kihagyva.</p>';
     else h+='<p class="cap">Válassza ki, mi lesz az edzés.</p>';
     if(wk==="uszas"||wk==="torna")h+='<div class="row" style="margin-top:8px"><button class="btn sm" data-act="wdone" data-d="'+d+'">'+(p.workoutDone?"Megvolt – visszavonom":"Megvolt")+'</button></div>';
-    h+=moveRow(d,b);
+    h+=durRow(d,b)+moveRow(d,b);
     if(x.conf)h+='<p class="cap bad">Időben ütközik egy másik sávval.</p>';
     return h+'</div>'}
   const ts=S.tasks.filter(t=>t.date===d&&t.blockId===b.id),dur=x.e-x.s,planned=ts.reduce((a,t)=>a+t.plan,0),isToday=d===today();
   let h='<div class="blk'+(x.conf?" conf":"")+'"'+(b.mode?' style="--c:var(--'+b.mode+')"':"")+'><div class="bh">'+gripHtml(d,b)+'<h3>'+esc(b.title)+'</h3><span class="bt">'+b.start+"–"+b.end+'</span></div>'+
     '<p class="cap'+(planned>dur?" over":"")+'">'+(b.mode?MODES[b.mode]+", ":"")+(planned>dur?"a feladatok "+fm(planned-dur)+"-cal hosszabbak a sávnál":(planned?fm(planned)+" tervezve a "+fm(dur)+"-ból":fm(dur)+" szabad"))+'</p>';
-  h+=moveRow(d,b);
+  h+=durRow(d,b)+moveRow(d,b);
   if(x.conf)h+='<p class="cap bad">Időben ütközik egy másik sávval.</p>';
   if(ts.length)h+='<ul class="tasks">'+ts.map(t=>taskHtml(t,isToday)).join("")+'</ul>';
   h+='<div class="addrow"><input type="text" id="bt-'+b.id+'" maxlength="120" placeholder="Feladat ebbe a sávba" aria-label="Új feladat a sávba" autocomplete="off">'+
@@ -552,6 +581,7 @@ function viewNapirend(){const w=weekDates();if(!pDate||!w.includes(pDate))pDate=
       '<div class="row" style="margin-top:12px"><button class="btn ghost sm" data-act="dayreset">'+(confirmDay?"Biztosan visszaállítom":"Visszaállítás a "+(ty==="wd"?"hétköznapi":"hétvégi")+" sablonra")+'</button></div>'+
       '<p class="muted small" style="margin-top:6px">A visszaállítás a nap sávjait cseréli le, a feladatok megmaradnak, de sáv nélkül.</p>';
     return h}
+  if(isToday)h+='<div class="row" style="margin-bottom:12px"><button class="btn ghost sm" data-act="replan">Hátralévő nap újratervezése</button></div>';
   const items=dayItems(d);
   if(!items.length)h+='<div class="slot">Nincs sáv. A „Sávok szerkesztése” gombbal vehet fel.</div>';
   items.forEach(x=>{h+=x.type==="travel"?'<div class="travel">'+hm(x.s)+"–"+hm(x.e)+" "+x.label+'</div>':blockHtml(x,d,p)});
@@ -845,6 +875,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "baddblock":{const sc=b.dataset.s,bl=getBlocks(sc),kind=b.dataset.k==="edzes";
       const last=bl.length?tm(bl[bl.length-1].end):9*60,st=Math.min(last,22*60);
       bl.push(kind?blk(hm(st),hm(st+60),"Edzés","edzes","edzes"):blk(hm(st),hm(st+60),"Új sáv",""));sortBlocks(bl);save();break}
+    case "bdur":{const m=resizeBlock(b.dataset.d,b.dataset.bid,+b.dataset.m);if(m)flash=m;save();break}
+    case "replan":flash=replanToday();save();break;
     case "bmove":moveBlock(b.dataset.d,b.dataset.bid,+b.dataset.m);save();break;
     case "bdel":{const sc=b.dataset.s,bl=getBlocks(sc),i=bl.findIndex(x=>x.id===b.dataset.bid);
       if(i>=0){bl.splice(i,1);S.tasks.forEach(x=>{if(x.blockId===b.dataset.bid)x.blockId=null});save()}break}
