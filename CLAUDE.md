@@ -34,12 +34,13 @@ Users say "horarium" or "hirarium" to start a development session on it.
 - Logo: `logoSvg()` (hourglass: loose grains above, ordered blocks below); the favicon is a bolder inline SVG, the apple-touch-icon an embedded PNG.
 - Focus: length chosen at start (`startDur`), `extend` adds 10 min; deep work mode (`deep`, `deepHtml()`, `ambient()` generated sound); soft block via `visibilitychange` keeps `away` seconds on the session.
 - `projNames()`/`projField()`: optional project on tasks and sessions. `weekReviewHtml()` (`S.weekly[monday]`), `monthHtml()`, `suggestDeep()` (`S.sug[date]`).
-- Emotional intelligence (`S.settings.eq`: `on`, `freq` napi/3/keres): `FEELS`/`recordFeel()` (`S.feel`), `EQ_STEPS` (5 areas × 8) with `eqToday()`/`eqHtml()` (`S.eqd[date]`), breathing with the pet (`breathOn`), `EQ_EVE` evening question, `feelHtml()` weekly map with a gentle 116-123 note. Tone: kind, optional, never judging.
+- Emotional intelligence (`S.settings.eq`: `on`, `freq` napi/3/keres): `FEELS`/`recordFeel()` (`S.feel`), `EQ_STEPS` (5 areas × 8) with `eqToday()`/`eqHtml()` (`S.eqd[date]`), breathing with the pet (`breathOn`), `EQ_EVE` evening question, `feelHtml()` weekly map; when hard feelings dominate it invites the user to write instead of pointing elsewhere. `feelBox()` lets the user write what they feel and `kindReply()` answers kindly (theme in the text first, else the feeling's group). No helpline numbers. Tone: kind, optional, never judging.
 - `render()` rebuilds the view; the click handler at the bottom switches on `data-act`.
 
 ## Writing rules
 
-- The UI is Hungarian and uses the polite "Ön" form for instructions ("Vegyen fel…", "Nyissa meg…"). Keep that register for new text.
+- The UI is Hungarian and addresses the user informally ("te": "Vegyél fel…", "Nyisd meg…"). The app speaks as "mi" ("Elmentettük…", "Itt vagyunk"). The tagline is "az idő a Te hasznodra".
+- Write active sentences: Hungarian avoids passive constructions, so "Elmentettük az adataidat", never "Az adatai elmentve".
 - Keep the app to one file.
 
 ## Checks before a commit
