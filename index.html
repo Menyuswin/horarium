@@ -289,6 +289,17 @@ nav button[aria-current="page"]{background:var(--accs);color:var(--munka);border
 .blk .bmore{min-width:40px;min-height:36px;border-radius:10px;background:var(--bg);color:var(--muted);font-size:1.2rem;line-height:1;margin-left:4px;align-self:center}
 .pills button{border:0;box-shadow:var(--sh)}
 @media (prefers-reduced-motion:reduce){.switch i,.sec>summary::after{transition:none}}
+.tl{margin-top:4px}
+.tlrow{display:grid;grid-template-columns:44px 1fr;gap:8px}
+.tlt{font-size:.8rem;color:var(--muted);text-align:right;padding-top:12px;font-variant-numeric:tabular-nums}
+.tlc{position:relative;padding-left:12px}.tlc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--line);border-radius:1px}
+.tlgap .tlc{height:22px}.tlgap .tlc::before{background:repeating-linear-gradient(var(--line) 0 4px,transparent 4px 8px)}
+.tlend .tlt{padding-top:0}.tlend .tlc{height:4px}
+.tlc .blk{position:relative;margin-bottom:8px}.tlc .travel{margin-bottom:8px}
+.nowline{position:absolute;left:-18px;right:0;height:2px;background:#E0A12E;z-index:3;pointer-events:none}
+.nowline::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:#E0A12E}
+.nowline span{position:absolute;left:-60px;top:-9px;font-size:.72rem;font-weight:700;background:#E0A12E;color:#2B1D02;border-radius:6px;padding:1px 5px;font-variant-numeric:tabular-nums}
+.tlnow .tlc{height:18px}.nowstatic{position:absolute;left:12px;right:0;top:8px}.nowstatic .nowline{left:-30px}.nowstatic .nowline::before{left:7px}.nowstatic .nowline span{left:-48px}
 </style>
 </head>
 <body>
@@ -501,7 +512,11 @@ function alertsDue(){const now=Date.now(),from=Math.max(alertStamp,now-30000);al
 setInterval(alertsDue,15000);
 /* Countdowns: time left in the current schedule block, and in the running task's plan. */
 function clock(sec){sec=Math.max(0,Math.ceil(sec));return String(Math.floor(sec/3600)).padStart(2,"0")+":"+String(Math.floor(sec%3600/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")}
+let napMin=-1;
 function countdown(){const now=Date.now();
+  const nd=new Date(),nmm=nd.getHours()*60+nd.getMinutes();
+  document.querySelectorAll(".nowline[data-s]").forEach(el=>{const s=+el.dataset.s,e=+el.dataset.e;if(e-s>1)el.style.top=Math.max(0,Math.min(100,(nmm-s)/(e-s)*100))+"%";const sp=el.querySelector("span");if(sp)sp.textContent=hm(nmm)});
+  if(view==="nap"&&!editPlan&&!drag&&nmm!==napMin){const a=document.activeElement,busy=a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName);if(napMin>=0&&!busy){napMin=nmm;render();return}napMin=nmm}
   const cdNow=document.getElementById("cd-now");
   if(cdNow){const d=today(),p=S.plan[d];
     const n=new Date(),nm=n.getHours()*60+n.getMinutes(),cur=p&&p.blocks.find(b=>!(b.kind==="edzes"&&p.workout==="nincs")&&tm(b.start)<=nm&&nm<tm(b.end));
@@ -678,11 +693,14 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
   return h}
 
 function blkAttr(x,d){const n=new Date(),nm=n.getHours()*60+n.getMinutes(),now=d===today()&&x.s<=nm&&nm<x.e;
-  return{cls:now?" now":"",style:"min-height:"+Math.max(64,Math.round((x.e-x.s)/60*52))+"px;",badge:now?'<span class="nowb">Most</span>':""}}
+  return{cls:now?" now":"",style:"min-height:"+Math.max(64,Math.round((x.e-x.s)/60*52))+"px;",badge:now?'<span class="nowb">Most</span>':"",
+    line:now?nowLine(x.s,x.e,nm):""}}
+/* The amber line at the current moment; data-s/-e let countdown() move it without a re-render. */
+function nowLine(s,e,nm){return '<div class="nowline" data-s="'+s+'" data-e="'+e+'" style="top:'+Math.round((nm-s)/Math.max(1,e-s)*100)+'%"><span>'+hm(nm)+'</span></div>'}
 function moreBtn(b){return '<button class="bmore" data-act="bopen" data-bid="'+b.id+'" aria-expanded="'+(bOpen===b.id)+'" aria-label="Sáv módosítása">⋯</button>'}
 function blockHtml(x,d,p){const b=x.b,ba=blkAttr(x,d);
   if(b.kind==="edzes"){const wk=p.workout,tr=+S.settings.travel||0,dur=x.e-x.s;
-    let h='<div class="blk'+(x.conf?" conf":"")+ba.cls+'" style="--c:var(--edzes);'+ba.style+'"><div class="bh">'+gripHtml(d,b)+'<h3>'+esc(b.title)+ba.badge+'</h3><span class="bt">'+b.start+"–"+b.end+'</span>'+moreBtn(b)+'</div>'+
+    let h='<div class="blk'+(x.conf?" conf":"")+ba.cls+'" style="--c:var(--edzes);'+ba.style+'">'+ba.line+'<div class="bh">'+gripHtml(d,b)+'<h3>'+esc(b.title)+ba.badge+'</h3><span class="bt">'+b.start+"–"+b.end+'</span>'+moreBtn(b)+'</div>'+
       '<div style="margin-top:8px">'+workoutSeg(d,wk)+'</div>';
     if(wk==="uszas")h+='<p class="cap">Úszás '+fm(dur)+', az út oda-vissza 2 × '+tr+' perc, az öltözés 2 × '+CHANGE+' perc, együtt '+fm(dur+2*tr+2*CHANGE)+'.</p>';
     else if(wk==="torna")h+='<p class="cap">Torna itthon, '+fm(dur)+'.</p>';
@@ -693,7 +711,7 @@ function blockHtml(x,d,p){const b=x.b,ba=blkAttr(x,d);
     if(x.conf)h+='<p class="cap bad">Időben ütközik egy másik sávval.</p>';
     return h+'</div>'}
   const ts=S.tasks.filter(t=>t.date===d&&t.blockId===b.id),dur=x.e-x.s,planned=ts.reduce((a,t)=>a+t.plan,0),isToday=d===today();
-  let h='<div class="blk'+(x.conf?" conf":"")+ba.cls+'" style="'+(b.mode?'--c:var(--'+b.mode+');':"")+ba.style+'"><div class="bh">'+gripHtml(d,b)+'<h3>'+esc(b.title)+ba.badge+'</h3><span class="bt">'+b.start+"–"+b.end+'</span>'+moreBtn(b)+'</div>'+
+  let h='<div class="blk'+(x.conf?" conf":"")+ba.cls+'" style="'+(b.mode?'--c:var(--'+b.mode+');':"")+ba.style+'">'+ba.line+'<div class="bh">'+gripHtml(d,b)+'<h3>'+esc(b.title)+ba.badge+'</h3><span class="bt">'+b.start+"–"+b.end+'</span>'+moreBtn(b)+'</div>'+
     '<p class="cap'+(planned>dur?" over":"")+'">'+(b.mode?MODES[b.mode]+", ":"")+(planned>dur?"a feladatok "+fm(planned-dur)+"-cal hosszabbak a sávnál":(planned?fm(dur)+", ebből "+fm(planned)+" foglalt":fm(dur)+" szabad"))+'</p>';
   if(bOpen===b.id)h+=durRow(d,b)+moveRow(d,b);
   if(x.conf)h+='<p class="cap bad">Időben ütközik egy másik sávval.</p>';
@@ -702,6 +720,21 @@ function blockHtml(x,d,p){const b=x.b,ba=blkAttr(x,d);
     '<button class="btn sm" data-act="badd" data-d="'+d+'" data-bid="'+b.id+'">Hozzáad</button></div>';
   return h+'</div>'}
 
+/* Day plan as a timeline: start times on the left axis, free gaps kept, and the amber line at the current moment. */
+function timelineHtml(d,p,items){const n=new Date(),nm=n.getHours()*60+n.getMinutes();let placed=d!==today(),prevEnd=null,h='<div class="tl">';
+  const row=(t,inner,cls)=>'<div class="tlrow'+(cls||"")+'"><div class="tlt">'+t+'</div><div class="tlc">'+inner+'</div></div>';
+  const nowRow=()=>row("",'<div class="nowstatic">'+nowLine(nm,nm+1,nm)+'</div>'," tlnow");
+  items.forEach(x=>{
+    if(!placed&&nm<x.s){h+=nowRow();placed=true}
+    else if(prevEnd!==null&&x.s>prevEnd)h+=row("",""," tlgap");
+    if(!placed&&x.type==="block"&&x.s<=nm&&nm<x.e)placed=true;
+    const inTravel=!placed&&x.type==="travel"&&x.s<=nm&&nm<x.e;
+    h+=row(hm(x.s),x.type==="travel"?'<div class="travel">'+hm(x.s)+"–"+hm(x.e)+" "+x.label+'</div>':blockHtml(x,d,p));
+    if(inTravel){h+=nowRow();placed=true}
+    prevEnd=Math.max(prevEnd||0,x.e)});
+  if(!placed&&items.length)h+=nowRow();
+  if(items.length)h+=row(hm(prevEnd),"", " tlend");
+  return h+'</div>'}
 function viewNapirend(){const w=weekDates();if(!pDate||!w.includes(pDate))pDate=today();
   const d=pDate,p=ensurePlan(d),isToday=d===today(),ty=dtype(d);
   let h='<div class="head"><div><h1>Napirend</h1><p class="date">'+longDate(parseD(d))+', '+(ty==="wd"?"hétköznap":"hétvége")+'</p></div>'+
@@ -721,7 +754,7 @@ function viewNapirend(){const w=weekDates();if(!pDate||!w.includes(pDate))pDate=
   if(isToday)h+='<div class="row" style="margin-bottom:12px"><button class="btn ghost sm" data-act="replan">Hátralévő nap újratervezése</button></div>';
   const items=dayItems(d);
   if(!items.length)h+='<div class="slot">Nincs sáv. A „Sávok szerkesztése” gombbal vehetsz fel.</div>';
-  items.forEach(x=>{h+=x.type==="travel"?'<div class="travel">'+hm(x.s)+"–"+hm(x.e)+" "+x.label+'</div>':blockHtml(x,d,p)});
+  h+=timelineHtml(d,p,items);
   const ids=p.blocks.map(b=>b.id),loose=S.tasks.filter(t=>t.date===d&&(!t.blockId||!ids.includes(t.blockId)));
   if(loose.length)h+='<h2>Sávhoz nem rendelt feladatok</h2><ul class="tasks">'+loose.map(t=>taskHtml(t,isToday)).join("")+'</ul>'+
     '<p class="muted small">Nyisd meg a feladatot, és válassz neki napirendi sávot.</p>';
