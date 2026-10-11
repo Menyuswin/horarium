@@ -188,7 +188,7 @@ function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=
   s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.hourLog=d.hourLog||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};s.sessions=Array.isArray(d.sessions)?d.sessions:[];s.reflect=d.reflect||null;return s}
 
 let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,confirmReset=false,confirmDay=false,
-    flash="",startFor=null,syncOn=false,pDate=null,editPlan=false,editId=null,editMode="munka";
+    flash="",startFor=null,capOpen=false,syncOn=false,pDate=null,editPlan=false,editId=null,editMode="munka";
 /* Edit form for a task that is already on a day. Shown in place of its action row. */
 function taskForm(t){return '<div class="panel" style="margin-top:4px"><label class="field"><span class="small">Cím</span><input type="text" id="e-title" maxlength="120" value="'+esc(t.title)+'" autocomplete="off"></label>'+
   '<div class="modes" role="group" aria-label="Mód">'+MK.filter(k=>k!=="edzes").map(k=>'<button data-act="emode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(editMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
@@ -324,23 +324,29 @@ function countdown(){const now=Date.now();
     if(cur)cdNow.textContent=clock((parseD(d).getTime()+tm(cur.end)*60000-now)/1000)}
   const cdTask=document.getElementById("cd-task");
   if(cdTask&&S.timer){const t=S.timer,task=find(t.taskId);
-    if(task){const elapsed=t.phase==="focus"?Math.min(now-t.startAt,t.durMs)/1000:0;
+    if(task){const elapsed=t.phase==="focus"?Math.min(tNow(t)-t.startAt,t.durMs)/1000:0;
       cdTask.textContent=clock((task.plan-(task.done||0))*60-elapsed)}}}
 setInterval(countdown,1000);
+/* A paused block keeps its remaining time: on resume startAt moves forward by the pause length. */
+function tNow(t){return t.pausedAt||Date.now()}
 function startTimer(id,intent,doneWhen){ensureAudio();
-  if(S.timer)stopTimer(true);
-  S.timer={taskId:id,phase:"focus",startAt:Date.now(),durMs:(+S.settings.focus||50)*60000,intent:intent||"",doneWhen:doneWhen||""};save();render()}
+  if(S.timer)stopTimer(true);capOpen=false;const n=Date.now();
+  S.timer={taskId:id,phase:"focus",startAt:n,began:n,durMs:(+S.settings.focus||50)*60000,intent:intent||"",doneWhen:doneWhen||"",pauses:[],distractions:[]};save();render()}
+function pauseTimer(){const t=S.timer;if(!t||t.phase!=="focus"||t.pausedAt)return;
+  t.pausedAt=Date.now();t.pauses=t.pauses||[];t.pauses.push({k:"egyeb",at:t.pausedAt,ms:0});save();render()}
+function resumeTimer(){const t=S.timer;if(!t||!t.pausedAt)return;const n=Date.now(),len=n-t.pausedAt;
+  t.startAt+=len;const p=(t.pauses||[]).slice(-1)[0];if(p)p.ms=len;t.pausedAt=null;save();render()}
 /* One finished focus block becomes one record; the reflection fills in the outcome afterwards. */
 function logSession(t,min,endAt,outcome){if(min<1)return null;const task=find(t.taskId);
   const x={id:uid(),taskId:t.taskId,title:task?task.title:"",mode:task?task.mode:"",planned:Math.round(t.durMs/60000),actual:min,
-    start:t.startAt,end:endAt,intent:t.intent||"",doneWhen:t.doneWhen||"",outcome:outcome||"",distraction:"",distractions:[]};
+    start:t.began||t.startAt,end:endAt,intent:t.intent||"",doneWhen:t.doneWhen||"",outcome:outcome||"",distraction:"",pauses:t.pauses||[],distractions:t.distractions||[]};
   S.sessions.push(x);return x}
 function stopTimer(silent){const t=S.timer;if(!t)return;
-  if(t.phase==="focus"){const el=Math.min(Date.now()-t.startAt,t.durMs),m=Math.round(el/60000),task=find(t.taskId);
+  if(t.phase==="focus"){const el=Math.min(tNow(t)-t.startAt,t.durMs),m=Math.round(el/60000),task=find(t.taskId);
     if(task&&m>=1){credit(task,m);hourCredit(m,new Date(t.startAt))}
     const x=logSession(t,m,t.startAt+el);if(x&&!silent)S.reflect=x.id}
-  S.timer=null;document.title="Horárium – napi fókusz";if(!silent){save();render()}}
-function tick(){const t=S.timer;if(!t)return;const now=Date.now(),end=t.startAt+t.durMs;
+  S.timer=null;capOpen=false;document.title="Horárium – napi fókusz";if(!silent){save();render()}}
+function tick(){const t=S.timer;if(!t)return;const now=tNow(t),end=t.startAt+t.durMs;
   if(now>=end){
     if(t.phase==="focus"){const task=find(t.taskId);if(task){credit(task,Math.round(t.durMs/60000),ymd(new Date(end)));hourCredit(Math.round(t.durMs/60000),new Date(t.startAt))}
       const x=logSession(t,Math.round(t.durMs/60000),end);if(x)S.reflect=x.id;
@@ -349,7 +355,7 @@ function tick(){const t=S.timer;if(!t)return;const now=Date.now(),end=t.startAt+
   const rem=Math.ceil((end-now)/1000),txt=String(Math.floor(rem/60)).padStart(2,"0")+":"+String(rem%60).padStart(2,"0");
   const el=document.getElementById("t-time"),ring=document.getElementById("t-ring");
   if(el)el.textContent=txt;if(ring)ring.setAttribute("stroke-dashoffset",(339.29*(1-(now-t.startAt)/t.durMs)).toFixed(1));
-  document.title=txt+(t.phase==="focus"?" – fókusz":" – szünet")}
+  document.title=txt+(t.pausedAt?" – szünetel":t.phase==="focus"?" – fókusz":" – szünet")}
 setInterval(tick,500);
 
 /* ---------- shared html ---------- */
@@ -436,7 +442,13 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
       '<div class="info"><p class="muted small">'+(focus?"Fókuszblokk":"Szünet. "+BREAK_TIPS[Math.floor(t.startAt/60000)%BREAK_TIPS.length])+'</p><h3 style="margin-bottom:10px">'+esc(task?task.title:"")+'</h3>'+
       (focus&&t.intent?'<p class="small"><b>Szándék:</b> '+esc(t.intent)+'</p>':"")+(focus&&t.doneWhen?'<p class="small"><b>Kész, ha:</b> '+esc(t.doneWhen)+'</p>':"")+
       (task?'<p class="small" style="margin-bottom:10px">Hátra a feladatból: <b id="cd-task" style="font-variant-numeric:tabular-nums"></b> <span class="muted">(tervezve '+fm(task.plan)+')</span></p>':"")+
-      '<button class="btn sm" data-act="stop">'+(focus?"Befejezem a blokkot":"Szünet kihagyása")+'</button></div></div>'}
+      (t.pausedAt?'<p class="small" style="margin-bottom:8px"><b>Szünetel.</b> A blokk ideje áll, és nem vész el. Mi miatt állt meg?</p><div class="row" style="margin-bottom:8px">'+
+        [["zene","Zene vagy hang"],["hivas","Hívás vagy ember"],["egyeb","Egyéb"]].map(r=>'<button class="btn ghost sm" data-act="pwhy" data-k="'+r[0]+'" aria-pressed="'+(((t.pauses||[]).slice(-1)[0]||{}).k===r[0])+'">'+r[1]+'</button>').join("")+'</div>':"")+
+      '<div class="row">'+(focus?(t.pausedAt?'<button class="btn sm" data-act="resume">Folytatás</button>':'<button class="btn ghost sm" data-act="pause">Szüneteltetés</button><button class="btn ghost sm" data-act="cap" aria-expanded="'+capOpen+'">Zavarás rögzítése'+((t.distractions||[]).length?" ("+t.distractions.length+")":"")+'</button>'):"")+
+      '<button class="btn sm" data-act="stop">'+(focus?"Befejezem a blokkot":"Szünet kihagyása")+'</button></div></div></div>'+
+      (focus&&capOpen?'<div class="panel" style="margin-bottom:14px"><label class="field"><span class="small">Mi jött közbe?</span><input type="text" id="c-note" maxlength="200" autocomplete="off"></label>'+
+        '<label class="field"><span class="small">Honnan jött?</span><select id="c-type"><option value="belso">Belső (gondolat, éhség, unalom)</option><option value="kulso">Külső (értesítés, ember, hívás)</option></select></label>'+
+        '<div class="row"><button class="btn sm" data-act="capsave">Rögzítem</button><button class="btn ghost sm" data-act="capsave" data-todo="1">Rögzítem, és legyen belőle teendő</button><button class="btn ghost sm" data-act="cap">Bezárom</button></div></div>':"")}
   if(isToday)h+=nowPanel();
   h+='<div class="row" style="justify-content:space-between"><div class="days" role="group" aria-label="Nap">'+
     '<button data-act="day" data-o="0" aria-pressed="'+(dayOff===0)+'">Ma</button><button data-act="day" data-o="1" aria-pressed="'+(dayOff===1)+'">Holnap</button></div>';
@@ -626,7 +638,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "done":if(!t)return;
       if(!t.completed){t.completed=true;const diff=t.plan-(t.done||0);
         if(diff>0){credit(t,diff);t.auto={min:diff,date:today()}}
-        if(S.timer&&S.timer.taskId===t.id&&S.timer.phase==="focus"){logSession(S.timer,Math.round(Math.min(Date.now()-S.timer.startAt,S.timer.durMs)/60000),Date.now(),"igen");S.timer=null;document.title="Horárium – napi fókusz"}}
+        if(S.timer&&S.timer.taskId===t.id&&S.timer.phase==="focus"){logSession(S.timer,Math.round(Math.min(tNow(S.timer)-S.timer.startAt,S.timer.durMs)/60000),Date.now(),"igen");S.timer=null;document.title="Horárium – napi fókusz"}}
       else{t.completed=false;if(t.auto){t.done=Math.max(0,t.done-t.auto.min);uncredit(t.mode,t.auto.min,t.auto.date);delete t.auto}}
       save();break;
     case "start":startFor=b.dataset.id;window.scrollTo(0,0);break;
@@ -636,6 +648,16 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "refl":{const x=S.sessions.find(y=>y.id===S.reflect),d=document.getElementById("r-dist");
       if(x){x.outcome=b.dataset.o;x.distraction=d?d.value:""}S.reflect=null;save();break}
     case "rskip":S.reflect=null;save();break;
+    case "pause":pauseTimer();return;
+    case "resume":resumeTimer();return;
+    case "pwhy":{const p=S.timer&&(S.timer.pauses||[]).slice(-1)[0];if(p){p.k=b.dataset.k;save()}break}
+    case "cap":capOpen=!capOpen;break;
+    case "capsave":{const n=document.getElementById("c-note"),ty=document.getElementById("c-type"),note=n?n.value.trim().slice(0,200):"";
+      if(!S.timer||!note){if(n)n.focus();return}
+      const base=find(S.timer.taskId),dis={type:ty?ty.value:"belso",note,at:Date.now()};
+      if(b.dataset.todo){const nt={id:uid(),date:today(),title:note,mode:base?base.mode:"munka",plan:25,done:0,star:false,completed:false,postponed:0,blockId:null};
+        S.tasks.push(nt);dis.taskId=nt.id;flash="Teendő felvéve mára: „"+note+"”."}
+      S.timer.distractions=S.timer.distractions||[];S.timer.distractions.push(dis);save();break}
     case "stop":stopTimer();return;
     case "plan":if(!t)return;t.plan=Math.min(600,Math.max(5,t.plan+(+b.dataset.d)));save();break;
     case "star":if(!t)return;
