@@ -224,6 +224,71 @@ textarea{min-height:76px;resize:vertical}
 @keyframes breathe{0%,100%{transform:scale(.82)}40%{transform:scale(1.12)}}
 @media (prefers-reduced-motion:reduce){.breath .bpet{animation:none}}
 .feelreply{margin-top:8px;padding:12px 14px;border-radius:12px;background:var(--soft);border-left:4px solid var(--qkk)}
+/* ---------- visual system v2: no borders, soft elevation, one accent ---------- */
+:root{--bg:#F3F5F2;--surface:#FFFFFF;--line:#E4EAE6;--soft:#EEF2EF;--accs:#E3F1EE;
+  --sh:0 1px 2px rgba(16,30,34,.05),0 10px 28px rgba(16,30,34,.07);--r:20px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0E1517;--surface:#172125;--line:#24333A;--soft:#1D2B30;--accs:#173A37;--sh:0 1px 0 rgba(255,255,255,.03),0 10px 30px rgba(0,0,0,.35)}}
+:root[data-theme="dark"]{--bg:#0E1517;--surface:#172125;--line:#24333A;--soft:#1D2B30;--accs:#173A37;--sh:0 1px 0 rgba(255,255,255,.03),0 10px 30px rgba(0,0,0,.35)}
+main{padding:16px 16px 120px}
+h1{font-size:1.75rem} h2{font-size:1.2rem;margin:1.5rem 4px .6rem}
+.panel{border:0;border-radius:var(--r);box-shadow:var(--sh);padding:16px}
+.alert{border-radius:16px}
+.btn{min-height:46px;border-radius:14px}.btn.sm{min-height:40px;border-radius:12px}
+.btn.ghost{background:var(--surface);border:1px solid var(--line)}
+input[type=text],input[type=number],input[type=time],textarea,select{border-radius:12px;background:var(--bg);border-color:transparent}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--munka);outline-offset:0;background:var(--surface)}
+.chips button{border-radius:999px;background:var(--surface)}
+.modechips button{padding-left:10px}.modechips button::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:6px;vertical-align:1px}
+.modechips button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:var(--surface)}.modechips button[aria-pressed="true"]::before{background:var(--surface)}
+.task{border:0;border-radius:16px;box-shadow:var(--sh);border-left:0}
+.task .meta em::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:5px;vertical-align:1px}
+.task .check span{border-color:var(--line);width:24px;height:24px}
+.task.done .check span{background:var(--munka);border-color:var(--munka)}
+.task .play{width:40px;height:40px;background:var(--accs);color:var(--munka)}
+.task .more{border-top:1px solid var(--line)}
+.days{border:0;background:var(--surface);box-shadow:var(--sh);border-radius:12px}
+.slotline{color:var(--muted);font-size:.92rem;margin:0 4px 6px}
+.sh{display:flex;align-items:baseline;justify-content:space-between}.sh span{font-family:"Alegreya Sans",sans-serif;font-size:.9rem;font-weight:500;color:var(--muted)}
+.morelink{text-align:center;margin:22px 0 4px}.morelink button{color:var(--munka);font-weight:700;text-decoration:underline}
+/* hero */
+.hero{position:relative;overflow:hidden;border-radius:24px;padding:18px;margin-bottom:14px;color:#fff;background:linear-gradient(150deg,#0E6E66,#13464A);box-shadow:var(--sh)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hero{background:linear-gradient(150deg,#16413C,#14262B)}}
+.hero .hlab{font-size:.78rem;letter-spacing:1.3px;text-transform:uppercase;opacity:.8}
+.hero .htitle{font-size:1.55rem;margin:6px 0 2px;color:#fff}
+.hero .hmeta{font-size:.9rem;opacity:.82}
+.hero .htime{font-family:"Alegreya",Georgia,serif;font-weight:700;font-size:2.9rem;line-height:1;margin:12px 0 6px;font-variant-numeric:tabular-nums}
+.hero .hbar{height:6px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden;margin-bottom:6px}.hero .hbar i{display:block;height:100%;background:#E0A12E;border-radius:3px}
+.hero.withpet .htitle,.hero.withpet .hmeta,.hero.withpet .hbar,.hero.withpet .hlab{max-width:62%}
+.hero .hpet{position:absolute;right:-4px;top:26px}.hero .hpet .pet{width:128px;height:128px}
+.hero .hsay{font-size:.85rem;background:rgba(255,255,255,.14);border-radius:12px;padding:6px 10px;margin-top:10px;display:inline-block}
+.hero .hgo{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;margin-top:14px;border-radius:16px;background:#fff;color:#0E3B3A;font-weight:700;font-size:1.05rem;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.hero .hlink{text-align:right;margin-top:8px;font-size:.88rem}.hero .hlink button{color:#fff;opacity:.85}
+.onething{display:flex;align-items:center;gap:12px;margin-bottom:14px}.onething .ost{width:38px;height:38px;border-radius:12px;background:#FCF1DB;color:#C5850F;display:grid;place-items:center;flex:none;font-size:1.1rem}
+.onething .okk{color:var(--ok);font-weight:700}
+.minirow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin-bottom:14px}.minirow .mst{width:36px;height:36px;border-radius:12px;background:#FBE6EE;color:#C9557F;display:grid;place-items:center;flex:none}
+.minirow .chev{margin-left:auto;color:var(--muted);font-size:1.3rem}
+.pet-panel.compact{display:block}
+/* nav */
+nav{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));border:0;border-radius:22px;box-shadow:var(--sh);padding:6px;background:var(--surface)}
+nav div{gap:4px}
+nav button{min-height:56px;border:0;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.78rem}
+nav button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+nav button[aria-current="page"]{background:var(--accs);color:var(--munka);border-top:0}
+/* settings groups */
+.sec{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}
+.sec>summary{list-style:none;cursor:pointer;padding:16px 18px;font-family:"Alegreya",Georgia,serif;font-weight:700;font-size:1.1rem;display:flex;justify-content:space-between;align-items:center;min-height:56px}
+.sec>summary::-webkit-details-marker{display:none}.sec>summary::after{content:"›";color:var(--muted);font-size:1.4rem;transition:transform .2s}.sec[open]>summary::after{transform:rotate(90deg)}
+.sec .panel{box-shadow:none;border-radius:0;padding-top:4px}
+.sub{font-size:1rem;margin:10px 16px 0;color:var(--muted)}
+.switch{width:52px;height:32px;border-radius:16px;background:var(--line);position:relative;flex:none}.switch i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s}
+.switch[aria-checked="true"]{background:var(--munka)}.switch[aria-checked="true"] i{left:23px}
+/* day plan */
+.blk{border:0;border-left:4px solid var(--c,var(--line));border-radius:16px;box-shadow:var(--sh)}
+.blk.now{outline:2px solid #E0A12E;outline-offset:0}
+.blk .nowb{display:inline-block;margin-left:8px;font-family:"Alegreya Sans",sans-serif;font-size:.75rem;font-weight:700;background:#E0A12E;color:#2B1D02;border-radius:999px;padding:2px 8px;vertical-align:2px}
+.blk .bmore{min-width:40px;min-height:36px;border-radius:10px;background:var(--bg);color:var(--muted);font-size:1.2rem;line-height:1;margin-left:4px;align-self:center}
+.pills button{border:0;box-shadow:var(--sh)}
+@media (prefers-reduced-motion:reduce){.switch i,.sec>summary::after{transition:none}}
 </style>
 </head>
 <body>
@@ -252,7 +317,7 @@ function defTemplates(){return{
       blk("14:30","18:30","Szabadprogram","szabad"),blk("19:00","22:00","Esti pihenés","pihenes")]}}
 function defTargets(){return{tanulas:{wd:5,we:2},munka:{wd:30,we:0},szabad:{wd:7,we:6},pihenes:{wd:15,we:8},edzes:{wd:5,we:2}}}
 function defaults(){return{v:2,updatedAt:0,
-  settings:{targets:defTargets(),focus:50,brk:10,travel:20,templates:defTemplates(),pet:{on:true,species:"kutya",name:""},eq:{on:true,freq:"napi"}},
+  settings:{targets:defTargets(),focus:50,brk:10,travel:20,templates:defTemplates(),pet:{on:true,species:"kutya",name:""},eq:{on:true,freq:"napi"},simple:true},
   tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{},sessions:[],reflect:null,petMins:0,morning:{},onboarded:false,weekly:{},sug:{},feel:[],eqd:{},eqDone:0,breaths:0}}
 function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=d.settings||{};
   const s=Object.assign(b,d);s.v=2;
@@ -266,13 +331,13 @@ function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=
   s.settings.pet=Object.assign({on:true,species:"kutya",name:""},ds.pet||{});
   s.morning=d.morning&&typeof d.morning==="object"?d.morning:{};s.weekly=d.weekly&&typeof d.weekly==="object"?d.weekly:{};s.sug=d.sug&&typeof d.sug==="object"?d.sug:{};
   s.feel=Array.isArray(d.feel)?d.feel:[];s.eqd=d.eqd&&typeof d.eqd==="object"?d.eqd:{};s.eqDone=+d.eqDone||0;s.breaths=+d.breaths||0;
-  s.settings.eq=Object.assign({on:true,freq:"napi"},ds.eq||{});
+  s.settings.eq=Object.assign({on:true,freq:"napi"},ds.eq||{});s.settings.simple=ds.simple!==undefined?!!ds.simple:true;
   s.onboarded=d.onboarded!==undefined?!!d.onboarded:!!((Array.isArray(d.tasks)&&d.tasks.length)||(Array.isArray(d.sessions)&&d.sessions.length));
   if(["kutya","macska","nyul","horcsog","felho","moha"].indexOf(s.settings.pet.species)<0)s.settings.pet.species="kutya";
   s.settings.pet.name=String(s.settings.pet.name||"").slice(0,20);return s}
 
 let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,confirmReset=false,confirmDay=false,pendingImport=null,petRename=false,introStep=0,
-    flash="",startFor=null,startDur=0,capOpen=false,deep=false,awayNote="",feelSel="",feelPet="",feelReply="",feelOpen=false,breathOn=0,eqAsk=false,syncOn=false,pDate=null,editPlan=false,editId=null,editMode="munka";
+    flash="",startFor=null,startDur=0,capOpen=false,deep=false,awayNote="",feelSel="",feelPet="",petMore=false,eqOpen=false,bOpen=null,openSecs=new Set(),feelReply="",feelOpen=false,breathOn=0,eqAsk=false,syncOn=false,pDate=null,editPlan=false,editId=null,editMode="munka";
 /* Edit form for a task that is already on a day. Shown in place of its action row. */
 function taskForm(t){return '<div class="panel" style="margin-top:4px"><label class="field"><span class="small">Cím</span><input type="text" id="e-title" maxlength="120" value="'+esc(t.title)+'" autocomplete="off"></label>'+
   '<div class="modes" role="group" aria-label="Mód">'+MK.filter(k=>k!=="edzes").map(k=>'<button data-act="emode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(editMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
@@ -547,9 +612,6 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
   const st=stale();
   if(st.length)h+='<div class="alert"><strong>'+st.length+' befejezetlen feladat maradt a korábbi napokról.</strong>'+
     '<div class="row"><button class="btn sm" data-act="carry">Áthozom mára</button><button class="btn ghost sm" data-act="drop">Elengedem</button></div></div>';
-  const beh=weekStatus().filter(x=>x.behind);
-  if(beh.length&&isToday)h+='<div class="alert"><strong>Heti elmaradás:</strong> '+beh.map(x=>MODES[x.k].toLowerCase()+" ("+fh(x.done)+" a "+fh(x.target)+"-ból)").join(", ")+
-    '. <button data-act="tab" data-v="het" style="text-decoration:underline">Részletek a heti nézetben</button></div>';
   if(tasks.length>MAX_FOCUS_BLOCKS)h+='<div class="alert"><strong>'+tasks.length+' fókuszblokkot osztottál be erre a napra.</strong> Több mint '+MAX_FOCUS_BLOCKS+' már túlterhelés. Érdemes néhányat másik napra tenni, vagy törölni.</div>';
   const rs=S.reflect&&S.sessions.find(y=>y.id===S.reflect);
   if(rs)h+='<div class="panel" style="margin-bottom:14px"><p class="muted small">Lezárt blokk: '+esc(rs.title)+', '+fm(rs.actual)+'</p><h3 style="margin:4px 0 8px">Hogyan sikerült?</h3>'+
@@ -576,14 +638,16 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
       (focus&&awayNote?'<p class="small" style="margin-bottom:8px">'+esc(awayNote)+'</p>':"")+
       (t.pausedAt?'<p class="small" style="margin-bottom:8px"><b>Szünetel.</b> A blokk ideje áll, és nem vész el. Mi miatt álltál meg?</p><div class="row" style="margin-bottom:8px">'+
         [["zene","Zene vagy hang"],["hivas","Hívás vagy ember"],["egyeb","Egyéb"]].map(r=>'<button class="btn ghost sm" data-act="pwhy" data-k="'+r[0]+'" aria-pressed="'+(((t.pauses||[]).slice(-1)[0]||{}).k===r[0])+'">'+r[1]+'</button>').join("")+'</div>':"")+
-      '<div class="row">'+(!focus?'<button class="btn ghost sm" data-act="breathe">Egy perc légzés'+(S.settings.pet.on?" a társával":"")+'</button>':"")+(focus?(t.pausedAt?'<button class="btn sm" data-act="resume">Folytatás</button>':'<button class="btn sm" data-act="deepon">Mély munka mód</button><button class="btn ghost sm" data-act="extend">+10 perc</button><button class="btn ghost sm" data-act="pause">Szüneteltetés</button><button class="btn ghost sm" data-act="cap" aria-expanded="'+capOpen+'">Zavarás rögzítése'+((t.distractions||[]).length?" ("+t.distractions.length+")":"")+'</button>'):"")+
+      '<div class="row">'+(!focus?'<button class="btn ghost sm" data-act="breathe">Egy perc légzés'+(S.settings.pet.on?" a társaddal":"")+'</button>':"")+(focus?(t.pausedAt?'<button class="btn sm" data-act="resume">Folytatás</button>':(S.settings.simple?"":'<button class="btn sm" data-act="deepon">Mély munka mód</button>')+'<button class="btn ghost sm" data-act="extend">+10 perc</button><button class="btn ghost sm" data-act="pause">Szüneteltetés</button><button class="btn ghost sm" data-act="cap" aria-expanded="'+capOpen+'">Zavarás rögzítése'+((t.distractions||[]).length?" ("+t.distractions.length+")":"")+'</button>'):"")+
       '<button class="btn sm" data-act="stop">'+(focus?"Befejezem a blokkot":"Szünet kihagyása")+'</button></div></div></div>'+
       (focus&&capOpen?'<div class="panel" style="margin-bottom:14px"><label class="field"><span class="small">Mi jött közbe?</span><input type="text" id="c-note" maxlength="200" autocomplete="off"></label>'+
         '<label class="field"><span class="small">Honnan jött?</span><select id="c-type"><option value="belso">Belső (gondolat, éhség, unalom)</option><option value="kulso">Külső (értesítés, ember, hívás)</option></select></label>'+
         '<div class="row"><button class="btn sm" data-act="capsave">Rögzítem</button><button class="btn ghost sm" data-act="capsave" data-todo="1">Rögzítem, és legyen belőle teendő</button><button class="btn ghost sm" data-act="cap">Bezárom</button></div></div>':"")}
-  if(isToday)h+=morningHtml()+suggestHtml()+eqHtml();
-  if(isToday&&S.settings.pet.on)h+=petPanel();
-  if(isToday)h+=nowPanel();
+  const hero=isToday&&!S.timer;
+  if(hero)h+=heroHtml();
+  if(isToday)h+=oneThingHtml()+(morningHtml()||suggestHtml()||eqHtml());
+  if(isToday&&!hero&&S.settings.pet.on)h+=petPanel(false);
+  if(isToday)h+=workoutHtml();
   h+='<div class="row" style="justify-content:space-between"><div class="days" role="group" aria-label="Nap">'+
     '<button data-act="day" data-o="0" aria-pressed="'+(dayOff===0)+'">Ma</button><button data-act="day" data-o="1" aria-pressed="'+(dayOff===1)+'">Holnap</button></div>';
   const plan=tasks.reduce((a,t)=>a+t.plan,0),done=tasks.reduce((a,t)=>a+(t.done||0),0);
@@ -594,41 +658,47 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
   const work=tasks.filter(t=>t.mode==="munka"),personal=tasks.filter(t=>t.mode!=="munka");
   const stars=personal.filter(t=>t.star),rest=personal.filter(t=>!t.star);
   const wk=weekStatus().find(x=>x.k==="munka"),wp=work.reduce((a,t)=>a+t.plan,0),wd=work.reduce((a,t)=>a+(t.done||0),0);
+  const simple=S.settings.simple;
   if(isToday||work.length){
-    h+='<h2>Munka</h2><div class="panel" style="--c:var(--munka);margin-bottom:8px"><div class="lab" style="display:flex;justify-content:space-between;gap:8px"><b style="color:var(--munka)">Ma</b><span class="small">'+(work.length?fm(wd)+" kész a "+fm(wp)+"-ból":"nincs munka-feladat")+'</span></div>'+
-      (wk&&wk.target?'<p class="small muted" style="margin-top:6px">A héten '+fh(wk.done)+" / "+fh(wk.target)+" munka"+(wk.done>=wk.target?", a heti cél teljesült.":", a hátralévő "+wk.left+" napra napi "+fh(wk.perDay)+" jut.")+'</p>':"")+'</div>'+
+    h+='<h2 class="sh">Munka <span>'+(work.length?fm(wd)+" kész a "+fm(wp)+"-ból":"")+'</span></h2>'+
+      (!simple&&wk&&wk.target?'<p class="small muted" style="margin:-4px 4px 8px">A héten '+fh(wk.done)+" / "+fh(wk.target)+" munka"+(wk.done>=wk.target?", a heti cél teljesült.":", a hátralévő "+wk.left+" napra napi "+fh(wk.perDay)+" jut.")+'</p>':"")+
       (work.length?'<ul class="tasks">'+work.map(t=>taskHtml(t,isToday)).join("")+'</ul>':'<p class="muted small" style="margin-bottom:12px">Munka-feladat felvételéhez válaszd lent a Munka módot.</p>');
   }
   h+='<h2>A nap három legfontosabbja</h2><ul class="tasks">'+stars.map(t=>taskHtml(t,isToday)).join("")+'</ul>';
-  for(let i=stars.length;i<3;i++)h+='<div class="slot">'+(tasks.length?"Szabad hely: nyisd meg a feladatot, és emeld ide.":"Vegyél fel feladatot alább vagy a napirendben, majd emeld ide a legfontosabbakat.")+'</div>';
+  if(stars.length<3)h+='<p class="slotline">'+(tasks.length?"Még "+(3-stars.length)+" hely van itt. Nyisd meg egy feladatodat, és emeld ide a „A három közé” gombbal.":"Vegyél fel feladatot alább, majd emeld ide a legfontosabbakat.")+'</p>';
   if(rest.length)h+='<h2>További feladatok</h2><ul class="tasks">'+rest.map(t=>taskHtml(t,isToday)).join("")+'</ul>';
+  if(isToday&&hero&&S.settings.pet.on)h+='<h2>Társad</h2>'+petPanel(true);
   h+='<h2>Új feladat '+(isToday?"mára":"holnapra")+'</h2><div class="panel">'+
-    '<label class="field"><span>Mit szeretnél elvégezni?</span><input type="text" id="f-title" maxlength="120" placeholder="pl. MIT-jegyzet 3. fejezete" autocomplete="off"></label>'+
-    '<div class="modes" role="group" aria-label="Mód">'+MK.map(k=>'<button data-act="fmode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(formMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
+    '<label class="field"><span>Mit szeretnél elvégezni?</span><input type="text" id="f-title" maxlength="120" placeholder="pl. ajánlat első fejezete" autocomplete="off"></label>'+
+    '<div class="row chips modechips" role="group" aria-label="Mód" style="margin-bottom:10px">'+MK.map(k=>'<button data-act="fmode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(formMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
     '<div class="row chips" role="group" aria-label="Időtartam" style="margin-bottom:12px">'+[25,50,100].map(m=>'<button data-act="fplan" data-m="'+m+'" aria-pressed="'+(formPlan===m)+'">'+fm(m)+'</button>').join("")+
-    '<input type="number" id="f-plan" min="5" max="600" step="5" inputmode="numeric" aria-label="Egyéni időtartam percben" placeholder="perc" value="'+([25,50,100].includes(formPlan)?"":formPlan)+'"></div>'+projField("f-proj","")+
-    '<button class="btn" data-act="add">Feladat felvétele</button></div>';
+    '<input type="number" id="f-plan" min="5" max="600" step="5" inputmode="numeric" aria-label="Egyéni időtartam percben" placeholder="perc" value="'+([25,50,100].includes(formPlan)?"":formPlan)+'"></div>'+(simple?"":projField("f-proj",""))+
+    '<button class="btn" data-act="add">Feladat felvétele</button></div>'+
+    (simple?'<p class="morelink"><button data-act="simpleoff">További funkciók bekapcsolása</button><br><span class="muted small">projektek, mély munka mód háttérhangokkal, részletes statisztika</span></p>':"");
   return h}
 
-function blockHtml(x,d,p){const b=x.b;
+function blkAttr(x,d){const n=new Date(),nm=n.getHours()*60+n.getMinutes(),now=d===today()&&x.s<=nm&&nm<x.e;
+  return{cls:now?" now":"",style:"min-height:"+Math.max(64,Math.round((x.e-x.s)/60*52))+"px;",badge:now?'<span class="nowb">Most</span>':""}}
+function moreBtn(b){return '<button class="bmore" data-act="bopen" data-bid="'+b.id+'" aria-expanded="'+(bOpen===b.id)+'" aria-label="Sáv módosítása">⋯</button>'}
+function blockHtml(x,d,p){const b=x.b,ba=blkAttr(x,d);
   if(b.kind==="edzes"){const wk=p.workout,tr=+S.settings.travel||0,dur=x.e-x.s;
-    let h='<div class="blk'+(x.conf?" conf":"")+'" style="--c:var(--edzes)"><div class="bh">'+gripHtml(d,b)+'<h3>'+esc(b.title)+'</h3><span class="bt">'+b.start+"–"+b.end+'</span></div>'+
+    let h='<div class="blk'+(x.conf?" conf":"")+ba.cls+'" style="--c:var(--edzes);'+ba.style+'"><div class="bh">'+gripHtml(d,b)+'<h3>'+esc(b.title)+ba.badge+'</h3><span class="bt">'+b.start+"–"+b.end+'</span>'+moreBtn(b)+'</div>'+
       '<div style="margin-top:8px">'+workoutSeg(d,wk)+'</div>';
     if(wk==="uszas")h+='<p class="cap">Úszás '+fm(dur)+', az út oda-vissza 2 × '+tr+' perc, az öltözés 2 × '+CHANGE+' perc, együtt '+fm(dur+2*tr+2*CHANGE)+'.</p>';
     else if(wk==="torna")h+='<p class="cap">Torna itthon, '+fm(dur)+'.</p>';
     else if(wk==="nincs")h+='<p class="cap">Ma pihenőnap, az edzés elmarad.</p>';
     else h+='<p class="cap">Válaszd ki, mi lesz az edzés.</p>';
     if(wk==="uszas"||wk==="torna")h+='<div class="row" style="margin-top:8px"><button class="btn sm" data-act="wdone" data-d="'+d+'">'+(p.workoutDone?"Megvolt – visszavonom":"Megvolt")+'</button></div>';
-    h+=durRow(d,b)+moveRow(d,b);
+    if(bOpen===b.id)h+=durRow(d,b)+moveRow(d,b);
     if(x.conf)h+='<p class="cap bad">Időben ütközik egy másik sávval.</p>';
     return h+'</div>'}
   const ts=S.tasks.filter(t=>t.date===d&&t.blockId===b.id),dur=x.e-x.s,planned=ts.reduce((a,t)=>a+t.plan,0),isToday=d===today();
-  let h='<div class="blk'+(x.conf?" conf":"")+'"'+(b.mode?' style="--c:var(--'+b.mode+')"':"")+'><div class="bh">'+gripHtml(d,b)+'<h3>'+esc(b.title)+'</h3><span class="bt">'+b.start+"–"+b.end+'</span></div>'+
+  let h='<div class="blk'+(x.conf?" conf":"")+ba.cls+'" style="'+(b.mode?'--c:var(--'+b.mode+');':"")+ba.style+'"><div class="bh">'+gripHtml(d,b)+'<h3>'+esc(b.title)+ba.badge+'</h3><span class="bt">'+b.start+"–"+b.end+'</span>'+moreBtn(b)+'</div>'+
     '<p class="cap'+(planned>dur?" over":"")+'">'+(b.mode?MODES[b.mode]+", ":"")+(planned>dur?"a feladatok "+fm(planned-dur)+"-cal hosszabbak a sávnál":(planned?fm(dur)+", ebből "+fm(planned)+" foglalt":fm(dur)+" szabad"))+'</p>';
-  h+=durRow(d,b)+moveRow(d,b);
+  if(bOpen===b.id)h+=durRow(d,b)+moveRow(d,b);
   if(x.conf)h+='<p class="cap bad">Időben ütközik egy másik sávval.</p>';
   if(ts.length)h+='<ul class="tasks">'+ts.map(t=>taskHtml(t,isToday)).join("")+'</ul>';
-  h+='<div class="addrow"><input type="text" id="bt-'+b.id+'" maxlength="120" placeholder="Feladat ebbe a sávba" aria-label="Új feladat a sávba" autocomplete="off">'+
+  if(bOpen===b.id)h+='<div class="addrow"><input type="text" id="bt-'+b.id+'" maxlength="120" placeholder="Feladat ebbe a sávba" aria-label="Új feladat a sávba" autocomplete="off">'+
     '<button class="btn sm" data-act="badd" data-d="'+d+'" data-bid="'+b.id+'">Hozzáad</button></div>';
   return h+'</div>'}
 
@@ -639,7 +709,7 @@ function viewNapirend(){const w=weekDates();if(!pDate||!w.includes(pDate))pDate=
   if(flash){h+='<div class="alert" role="status">'+esc(flash)+'</div>';flash=""}
   h+='<div class="pills" role="group" aria-label="A hét napjai">'+w.map((dd,i)=>
     '<button data-act="pday" data-d="'+dd+'" class="'+(i>=5?"we ":"")+(dd===today()?"today":"")+'" aria-pressed="'+(dd===d)+'"><b>'+DAYS[i]+'</b><small>'+(+dd.slice(8))+'.</small></button>').join("")+'</div>';
-  h+='<p class="muted small" style="margin-bottom:12px">Az első öt nap hétköznap, a két szürke hétvége. Mindkettőnek külön sablonja van a Beállításban.</p>';
+  if(!S.settings.simple)h+='<p class="muted small" style="margin-bottom:12px">Az első öt nap hétköznap, a két szürke hétvége. Mindkettőnek külön sablonja van a Beállításban.</p>';
   const by=dayPlanMins(d),sum=MK.reduce((a,k)=>a+by[k],0);
   if(sum)h+='<div class="strip" aria-hidden="true">'+MK.map(k=>by[k]?'<i style="width:'+(by[k]/sum*100)+'%;background:var(--'+k+')"></i>':"").join("")+'</div>'+
     '<div class="legend" style="margin-bottom:14px">'+MK.filter(k=>by[k]).map(k=>'<span><b style="background:var(--'+k+')"></b>'+MODES[k]+" "+fm(by[k])+'</span>').join("")+'</div>';
@@ -750,20 +820,20 @@ function petSvg(key,mood,lv){const P=PETS[key]||PETS.kutya,F=P.fur,D=P.dark,B=P.
     '<ellipse cx="42" cy="62" rx="6.5" ry="4.8" fill="url(#pb-'+key+')" opacity="'+bl+'"/><ellipse cx="78" cy="62" rx="6.5" ry="4.8" fill="url(#pb-'+key+')" opacity="'+bl+'"/>'+
     eyes+whisk+nose+mouth+'<ellipse class="tongue" cx="60" cy="69.5" rx="4.5" ry="3.2" fill="#F28B9B" stroke="#D9677A" stroke-width="1"/>'+top+'</g></g></g>'+
     hearts+(mood===4?star(22,32)+star(100,38):"")+(mood===0?'<text class="zz" x="88" y="30" font-size="13" font-weight="700" fill="var(--muted)">z</text>':"")+'</svg>'}
-function petPanel(){const c=S.settings.pet,m=S.petMins||0,lv=petLevel(m),mood=petMood(),nx=PET_LV[lv+1],n=petName(),t=S.timer;
+function petPanel(noSvg){const c=S.settings.pet,m=S.petMins||0,lv=petLevel(m),mood=petMood(),nx=PET_LV[lv+1],n=petName(),t=S.timer;
   let say=dayPick(PET_MOOD[mood],"m"+mood).replace("{n}",n);if(t&&t.phase==="focus"&&!t.pausedAt&&mood<=2)say=dayPick(PET_RUN,"r").replace("{n}",n);
   const un=PET_TRICKS.filter(x=>x[2]<=lv);
   const naming=!c.name||petRename;
-  return '<div class="panel pet-panel"><button class="pet-btn" data-act="petpoke" aria-label="Simogasd meg: '+esc(n)+'">'+petSvg(c.species,mood,lv)+'</button>'+
+  return '<div class="panel pet-panel'+(noSvg?" compact":"")+'">'+(noSvg?"":'<button class="pet-btn" data-act="petpoke" aria-label="Simogasd meg: '+esc(n)+'">'+petSvg(c.species,mood,lv)+'</button>')+
     '<div class="pet-info">'+(naming?'<p class="small" style="margin-bottom:6px"><b>'+(c.name?"Milyen új nevet kapjon?":"Adj nevet új társadnak!")+'</b></p>'+
       '<div class="addrow" style="margin-bottom:8px"><input type="text" id="pet-name" maxlength="20" placeholder="'+esc(PETS[c.species].def)+'" value="'+esc(c.name)+'" aria-label="A kisállat neve" autocomplete="off"><button class="btn sm" data-act="pname">Elnevezem</button></div>':
       '<div class="row" style="justify-content:space-between;align-items:center;margin:0 0 4px"><h3 style="margin:0">'+esc(n)+'</h3><button class="btn ghost sm" data-act="prename">Átnevezés</button></div>')+
-    '<p class="small">'+esc(say)+'</p>'+
-    (S.petNote&&Date.now()-S.petNote.at<30*60000?'<p class="small" style="margin-top:6px"><b>'+esc(S.petNote.text)+'</b></p>':"")+
-    '<p class="small muted" style="margin-top:6px">Szint '+lv+': '+PET_NAMES[lv]+'</p>'+
+    (noSvg?'<p class="small muted">Szint '+lv+': '+PET_NAMES[lv]+' · <button data-act="petmore" style="text-decoration:underline">'+(petMore?"Kevesebb":"Részletek")+'</button></p>':'<p class="small">'+esc(say)+'</p>')+
+    (!noSvg&&S.petNote&&Date.now()-S.petNote.at<30*60000?'<p class="small" style="margin-top:6px"><b>'+esc(S.petNote.text)+'</b></p>':"")+
+    (noSvg&&!petMore?"":(noSvg?"":'<p class="small muted" style="margin-top:6px">Szint '+lv+': '+PET_NAMES[lv]+'</p>')+
     '<div class="pbar" aria-hidden="true"><i style="width:'+(nx?Math.round((m-PET_LV[lv])/(nx-PET_LV[lv])*100):100)+'%"></i></div>'+
     '<p class="note muted">'+(nx?"Még "+fm(nx-m)+" fókusz a következő szintig. Újdonság: "+PET_UNLOCK[lv+1]+".":"Elérte a legmagasabb szintet.")+'</p>'+
-    '<p class="note muted">Trükkök ('+un.length+" / "+PET_TRICKS.length+"): "+un.map(x=>x[1]).join(", ")+'.</p>'+
+    '<p class="note muted">Trükkök ('+un.length+" / "+PET_TRICKS.length+"): "+un.map(x=>x[1]).join(", ")+'.</p>')+
     (S.settings.eq.on?'<p class="small" style="margin-top:8px"><button data-act="feelopen" style="text-decoration:underline">Hogy érzed magad?</button> · <button data-act="breathe" style="text-decoration:underline">Egy perc légzés együtt</button></p>'+(feelOpen?feelBox():""):"")+'</div></div>'}
 let petBusy=false;
 function petTrick(name){const el=document.getElementById("pet-svg");if(!el||petBusy)return;
@@ -793,12 +863,31 @@ function dayStory(){const d=today(),on=S.settings.pet.on,n=petName(),d0=parseD(d
   if(open.length)out.push(open.length+" feladat nyitva maradt. Holnap egy kattintással áthozhatod"+(open.length>1?" őket, most nem kell foglalkoznod velük.":", most nem kell foglalkoznod vele."));
   if(new Date().getHours()>=19)out.push(on?P(["{n} jó éjszakát kíván.","{n} már a helyén szuszog. Jó pihenést!","{n} holnap is itt lesz. Jó éjszakát!"],4):"Jó pihenést!");
   return out}
+/* ---------- today: hero card ---------- */
+/* The one thing that matters now: the current block, the task to start, a countdown and one big button. */
+function heroCand(d,cur){const open=S.tasks.filter(t=>t.date===d&&!t.completed);
+  return (cur&&open.find(t=>t.blockId===cur.b.id))||open.find(t=>t.proud)||open.find(t=>t.star)||open[0]||null}
+function heroHtml(){const d=today(),p=ensurePlan(d),items=dayItems(d).filter(x=>x.type==="block"&&!(x.b.kind==="edzes"&&p.workout==="nincs"));
+  const n=new Date(),nm=n.getHours()*60+n.getMinutes(),cur=items.find(x=>x.s<=nm&&nm<x.e),nxt=items.find(x=>x.s>nm),cand=heroCand(d,cur),c=S.settings.pet;
+  const lab=cur?"Most"+(cur.b.mode?" · "+MODES[cur.b.mode]:"")+" · "+hm(cur.s)+"–"+hm(cur.e):nxt?"Következő: "+hm(nxt.s)+" "+esc(nxt.b.title):"Ma";
+  const pct=cur?Math.round((nm-cur.s)/Math.max(1,cur.e-cur.s)*100):0;
+  let say="";if(c.on){const mood=petMood(),t=S.timer;say=S.petNote&&Date.now()-S.petNote.at<30*60000?S.petNote.text:dayPick(PET_MOOD[mood],"m"+mood).replace("{n}",petName())}
+  return '<div class="hero'+(c.on?" withpet":"")+'"><p class="hlab">'+lab+'</p>'+
+    '<h2 class="htitle">'+esc(cand?cand.title:(cur?cur.b.title:"Szabad időd van"))+'</h2>'+
+    (cand?'<p class="hmeta">'+MODES[cand.mode]+(cand.project?" · "+esc(cand.project):"")+" · terv: "+fm(cand.plan)+(cand.done?", eddig "+fm(cand.done):"")+'</p>':"")+
+    (cur?'<div class="htime" id="cd-now">–</div><div class="hbar"><i style="width:'+pct+'%"></i></div><p class="hmeta">van még hátra a sávból</p>':"")+
+    (c.on?'<button class="pet-btn hpet" data-act="petpoke" aria-label="Simogasd meg: '+esc(petName())+'">'+petSvg(c.species,petMood(),petLevel(S.petMins||0))+'</button>'+(say?'<p class="hsay">'+esc(say)+'</p>':""):"")+
+    (cand?'<button class="hgo" data-act="start" data-id="'+cand.id+'"><span aria-hidden="true">▶</span> Fókusz indítása</button>':'<button class="hgo" data-act="focusadd">+ Vegyél fel egy feladatot</button>')+
+    '<p class="hlink"><button data-act="gonap">Teljes napirend ›</button></p></div>'}
+function workoutHtml(){const d=today(),p=ensurePlan(d),wb=p.blocks.find(b=>b.kind==="edzes");if(!wb)return"";
+  return '<div class="panel" style="margin-bottom:14px"><p style="margin-bottom:8px"><b>Edzés ma</b> <span class="muted small">'+wb.start+"–"+wb.end+(p.workoutDone?", megvolt":"")+'</span></p>'+workoutSeg(d,p.workout)+'</div>'}
+function oneThingHtml(){const m=S.morning[today()];if(!m||!m.text)return"";const t=find(m.taskId),ok=t&&t.completed;
+  return '<div class="panel onething"><span class="ost" aria-hidden="true">★</span><div><p class="small muted">A mai egy dolog</p><p><b>'+esc(m.text)+'</b>'+(ok?' <span class="okk">kész!</span>':"")+'</p></div></div>'}
 /* ---------- morning ---------- */
 /* One question a day; the answer becomes today's task marked as "the one thing". Skipping is always fine. */
 function morningHtml(){const d=today(),m=S.morning[d],on=S.settings.pet.on;
   if(m&&m.skip)return"";
-  if(m&&m.text){const t=find(m.taskId),ok=t&&t.completed;
-    return '<p class="small" style="margin-bottom:12px">★ A mai egy dolog: <b>'+esc(m.text)+'</b>'+(ok?' <span style="color:var(--ok);font-weight:700">– kész!</span>':"")+'</p>'}
+  if(m&&m.text)return"";
   const hr=new Date().getHours(),hi=hr<10?"Jó reggelt!":hr<18?"Szép napot!":"Jó estét!";
   return '<div class="panel" style="margin-bottom:14px"><p class="muted small">'+hi+(on?" "+esc(petName())+" már kíváncsi, mi lesz ma.":"")+'</p>'+
     '<h3 style="margin:4px 0 8px">Mi az az egy dolog, amire ma este büszke lennél?</h3>'+
@@ -1059,7 +1148,8 @@ function eqDayOn(){const f=S.settings.eq.freq,g=new Date().getDay();return f==="
 function eqToday(){const d=today(),n=Math.floor(parseD(d).getTime()/86400000),a=n%5,e=S.eqd[d]||{};const i=((e.shift||0)+Math.floor(n/5))%8;return{d,a,i,e,text:EQ_STEPS[a][i]}}
 function eqHtml(){if(!S.settings.eq.on)return"";const q=eqToday();if(q.e.skip)return"";
   if(!eqDayOn()&&!q.e.asked)return eqAsk?"":'<p style="margin:-4px 0 12px"><button class="small muted" data-act="eqask" style="text-decoration:underline">Kérek egy kis lépést mára</button></p>';
-  if(q.e.done)return '<p class="small" style="margin-bottom:12px">♡ A mai kis lépés megvan: <span class="muted">'+esc(q.text)+'</span></p>';
+  if(q.e.done)return"";
+  if(!eqOpen)return '<button class="panel minirow" data-act="eqopen"><span class="mst" aria-hidden="true">♡</span><span><span class="small muted">A mai kis lépés · '+EQ_AREAS[q.a]+'</span><br>'+esc(q.text)+'</span><span class="chev" aria-hidden="true">›</span></button>';
   return '<div class="panel eqcard" style="margin-bottom:14px"><p class="muted small">A mai kis lépés · '+EQ_AREAS[q.a]+'</p><p style="margin:6px 0 10px">'+esc(q.text)+'</p>'+
     '<div class="row"><button class="btn sm" data-act="eqdone">Megcsináltam</button><button class="btn ghost sm" data-act="eqnext">Másikat kérek</button><button class="btn ghost sm" data-act="eqskip">Ma nem</button></div>'+
     (S.eqDone?'<p class="note muted" style="margin-top:8px">Eddig '+S.eqDone+' kis lépés.</p>':"")+'</div>'}
@@ -1170,6 +1260,7 @@ function sessHtml(){const st=sessStats();let h='<h2>Fókuszmenetek (elmúlt 28 n
   const tb=(t,g)=>'<p class="small" style="margin:8px 0 4px"><b>'+t+'</b></p><table class="small" style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left"><th>Csoport</th><th>Blokk</th><th>Sikerült</th><th>Megszakítás/blokk</th></tr></thead><tbody>'+rows(g)+'</tbody></table>';
   const pn=[...new Set(st.list.map(x=>x.project).filter(Boolean))];
   const byProj=pn.length?sessGroup(st.list,pn.map(n=>[n,n,v=>v===n]),x=>x.project).sort((a,b)=>b.mins-a.mins):[];
+  if(S.settings.simple)return h+'</div>';
   return h+tb("Blokkhossz szerint",st.byLen)+tb("Napszak szerint",st.byDay)+
     (byProj.length?'<p class="small" style="margin:8px 0 4px"><b>Projekt szerint</b></p><table class="small" style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left"><th>Projekt</th><th>Fókusz</th><th>Blokk</th><th>Sikerült</th></tr></thead><tbody>'+
       byProj.map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+fm(x.mins)+'</td><td>'+x.n+'</td><td>'+(x.rate===null?"–":Math.round(x.rate*100)+"%")+'</td></tr>').join("")+'</tbody></table>':"")+'</div>'}
@@ -1196,21 +1287,23 @@ function viewHet(){const w=weekDates(),st=weekStatus();
     if(s)svg+='<text x="'+(x+15)+'" y="'+(y-4).toFixed(1)+'" text-anchor="middle">'+(Math.round(s/6)/10).toLocaleString("hu-HU")+'</text>';
     svg+='<text x="'+(x+15)+'" y="138" text-anchor="middle"'+(w[i]===today()?' style="font-weight:700;fill:var(--ink)"':"")+'>'+DAYS[i]+'</text>'});
   svg+='<line x1="8" y1="120.5" x2="312" y2="120.5" stroke="var(--line)"/></svg>';
-  h+='<h2>Napi ráfordítás (óra)</h2><div class="panel">'+svg+'<div class="legend" style="margin-top:6px">'+MK.map(k=>'<span><b style="background:var(--'+k+')"></b>'+MODES[k]+'</span>').join("")+'</div></div>';
+  const adv=!S.settings.simple;
+  if(adv)h+='<h2>Napi ráfordítás (óra)</h2><div class="panel">'+svg+'<div class="legend" style="margin-top:6px">'+MK.map(k=>'<span><b style="background:var(--'+k+')"></b>'+MODES[k]+'</span>').join("")+'</div></div>';
   const wt=S.tasks.filter(t=>w.includes(t.date)),pl=wt.reduce((a,t)=>a+t.plan,0),dn=wt.reduce((a,t)=>a+(t.done||0),0);
   const cut28=ymd(addDays(new Date(),-27)),hb={reggel:0,delutan:0,este:0};
   Object.keys(S.hourLog).filter(d=>d>=cut28).forEach(d=>Object.keys(S.hourLog[d]).forEach(hr=>{const x=+hr,m=S.hourLog[d][hr],k=x>=5&&x<=11?"reggel":x>=12&&x<=16?"delutan":"este";hb[k]+=m}));
   const ht=hb.reggel+hb.delutan+hb.este,lab={reggel:"Reggel (5–11)",delutan:"Délután (12–16)",este:"Este és éjjel (17–4)"};
-  h+='<h2>Mikor dolgozol a legjobban</h2><div class="panel">';
+  if(adv){h+='<h2>Mikor dolgozol a legjobban</h2><div class="panel">';
   if(ht<60)h+='<p class="muted">Az elmúlt 4 hétből még kevés adat van ('+fm(ht)+' fókusz). Néhány fókuszblokk után itt látszik a mintázat.</p>';
   else{const best=Object.keys(hb).sort((a,b)=>hb[b]-hb[a])[0];
     h+='<p style="margin-bottom:8px">A fókuszidő legnagyobb része: <b>'+lab[best]+'</b>.</p>'+Object.keys(hb).map(k=>'<div class="wk" style="--c:var(--munka)"><div class="lab"><span>'+lab[k]+'</span><span>'+Math.round(hb[k]/ht*100)+'%</span></div><div class="bar"><i style="width:'+(hb[k]/ht*100)+'%"></i></div></div>').join("")}
-  h+='</div>';
-  h+=sessHtml()+feelHtml()+monthHtml()+weekReviewHtml();
-  h+='<h2>Terv és valóság</h2><div class="panel"><p>A héten '+fm(pl)+' munkát terveztél feladatokba, ebből '+fm(dn)+' valósult meg'+(pl?" ("+Math.round(dn/pl*100)+"%)":"")+'. '+wt.filter(t=>t.completed).length+' feladat készült el a '+wt.length+'-ból.</p></div>';
+  h+='</div>'}
+  h+=sessHtml()+feelHtml()+(S.settings.simple?"":monthHtml())+weekReviewHtml();
+  if(adv)h+='<h2>Terv és valóság</h2><div class="panel"><p>A héten '+fm(pl)+' munkát terveztél feladatokba, ebből '+fm(dn)+' valósult meg'+(pl?" ("+Math.round(dn/pl*100)+"%)":"")+'. '+wt.filter(t=>t.completed).length+' feladat készült el a '+wt.length+'-ból.</p></div>';
   const late=S.tasks.filter(t=>!t.completed&&(t.postponed||0)>=2).sort((a,b)=>b.postponed-a.postponed);
   h+='<h2>Halasztott feladatok</h2>'+(late.length?'<ul class="tasks">'+late.map(t=>'<li class="task" style="--c:var(--'+t.mode+')"><div class="top" style="padding:10px 12px"><span class="body"><span class="title">'+esc(t.title)+'</span><span class="meta"><span class="'+(t.postponed>=3?"late":"")+'">'+t.postponed+'× tolódott</span>, '+MODES[t.mode].toLowerCase()+", "+fm(t.plan)+'</span></span></div></li>').join("")+'</ul>'
     :'<p class="muted">Nincs többször elhalasztott feladatod.</p>');
+  if(!adv)h+='<p class="morelink"><button data-act="simpleoff">Részletes statisztika megjelenítése</button><br><span class="muted small">napi grafikon, havi naptár, táblázatok blokkhossz és napszak szerint</span></p>';
   return h}
 
 function viewEste(){const d=today(),r=S.reviews[d]||{};
@@ -1233,50 +1326,58 @@ function viewEste(){const d=today(),r=S.reviews[d]||{};
     (x.good?'<p><span class="muted">Jól ment:</span> '+esc(x.good)+'</p>':"")+(x.slip?'<p><span class="muted">Elcsúszott:</span> '+esc(x.slip)+'</p>':"")+(x.first?'<p><span class="muted">Másnapi első:</span> '+esc(x.first)+'</p>':"")+'</div>'}).join("");
   return h}
 
+function sec(k,t){return '<details class="sec" data-sec="'+k+'"'+(openSecs.has(k)?" open":"")+'><summary>'+t+'</summary>'}
 function viewBeall(){const s=S.settings,T=s.targets;
-  let h='<div class="head"><div><h1>Beállítások</h1><p class="date">A heti célokhoz méri az alkalmazás az elmaradást.</p></div></div>';
+  let h='<div class="head"><div><h1>Beállítások</h1><p class="date">Itt szabhatod a Horáriumot a saját napodhoz.</p></div></div>';
   if(flash){h+='<div class="alert" role="status">'+esc(flash)+'</div>';flash=""}
+  if(pendingImport)openSecs.add("adat");
+  h+='<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div><b>Egyszerű mód</b><p class="small muted" style="margin-top:2px">'+
+    (s.simple?"Csak a legfontosabbak látszanak. A projektek, a mély munka mód és a részletes statisztika rejtve marad.":"Minden funkció látszik: projektek, mély munka mód háttérhangokkal, részletes statisztika.")+'</p></div>'+
+    '<button class="switch" role="switch" aria-checked="'+s.simple+'" aria-label="Egyszerű mód" data-act="simple"><i></i></button></div></div>';
   const sw=MK.reduce((a,k)=>a+(+T[k].wd||0),0),se=MK.reduce((a,k)=>a+(+T[k].we||0),0);
-  h+='<h2 style="margin-top:0">Heti célok (óra)</h2><div class="panel"><div class="tgt"><span></span><b class="small">Hétköznap (H–P)</b><b class="small">Hétvége (Szo–V)</b></div>'+
+  h+=sec("celok","Heti célok")+'<div class="panel"><div class="tgt"><span></span><b class="small">Hétköznap (H–P)</b><b class="small">Hétvége (Szo–V)</b></div>'+
     MK.map(k=>'<div class="tgt"><span style="color:var(--'+k+');font-weight:700">'+MODES[k]+'</span>'+
       '<input type="number" min="0" max="100" step="0.5" inputmode="decimal" aria-label="'+MODES[k]+', hétköznap, óra" data-set="target" data-k="'+k+'" data-t="wd" value="'+T[k].wd+'">'+
       '<input type="number" min="0" max="100" step="0.5" inputmode="decimal" aria-label="'+MODES[k]+', hétvége, óra" data-set="target" data-k="'+k+'" data-t="we" value="'+T[k].we+'"></div>').join("")+
     '<p class="muted small">Hétköznap összesen '+sw.toLocaleString("hu-HU")+' óra, hétvégén '+se.toLocaleString("hu-HU")+' óra. A hétköznapi órák öt napra, a hétvégiek két napra oszlanak.</p></div>';
-  h+='<h2>Hétköznapi napirend-sablon</h2><div class="panel">'+blockRows(s.templates.wd,"wd")+addBlockBtns("wd")+'</div>';
-  h+='<h2>Hétvégi napirend-sablon</h2><div class="panel">'+blockRows(s.templates.we,"we")+addBlockBtns("we")+
+  h+='</details>'+sec("sablon","Napirend-sablonok")+'<h3 class="sub">Hétköznap</h3><div class="panel">'+blockRows(s.templates.wd,"wd")+addBlockBtns("wd")+'</div>';
+  h+='<h3 class="sub">Hétvége</h3><div class="panel">'+blockRows(s.templates.we,"we")+addBlockBtns("we")+
     '<p class="muted small" style="margin-top:8px">A sablon az újonnan megnyitott napokra érvényes. Egy konkrét nap sávjait a Napirend nézetben módosíthatod.</p></div>';
-  h+='<h2>Edzés és fókuszritmus</h2><div class="panel"><div class="grid2"><label class="field"><span>Út az uszodába (perc, egy irány)</span><input type="number" min="0" max="120" step="5" inputmode="numeric" data-set="travel" value="'+s.travel+'"></label><span></span>'+
+  h+='</details>'+sec("fokusz","Fókusz, edzés és jelzések")+'<div class="panel"><div class="grid2"><label class="field"><span>Út az uszodába (perc, egy irány)</span><input type="number" min="0" max="120" step="5" inputmode="numeric" data-set="travel" value="'+s.travel+'"></label><span></span>'+
     '<div class="row chips" role="group" aria-label="Fókusz-ritmus" style="margin-bottom:12px">'+[[25,5,"Gyors: 25/5"],[50,10,"Mély: 50/10"]].map(p=>'<button data-act="preset" data-f="'+p[0]+'" data-b="'+p[1]+'" aria-pressed="'+(s.focus===p[0]&&s.brk===p[1])+'">'+p[2]+'</button>').join("")+'</div>'+
     '<label class="field"><span>Fókuszblokk (perc)</span><input type="number" min="5" max="180" step="5" inputmode="numeric" data-set="focus" value="'+s.focus+'"></label>'+
     '<label class="field"><span>Szünet (perc)</span><input type="number" min="1" max="60" inputmode="numeric" data-set="brk" value="'+s.brk+'"></label></div>'+
     '<p class="muted small">A blokk végén hangjelzés szól, ha az alkalmazás nyitva van.</p></div>';
-  h+='<h2>Jelzések</h2><div class="panel"><p style="margin-bottom:10px">'+(S.settings.alerts?"Hang és értesítés jelzi, amikor egy napirendi sáv elkezdődik vagy véget ér, és amikor a fókuszidő lejár.":"Most nem szól. Ha bekapcsolod, hang és értesítés jelzi a napirendi sávok kezdését és végét.")+'</p>'+
+  h+='<h3 class="sub">Jelzések</h3><div class="panel"><p style="margin-bottom:10px">'+(S.settings.alerts?"Hang és értesítés jelzi, amikor egy napirendi sáv elkezdődik vagy véget ér, és amikor a fókuszidő lejár.":"Most nem szól. Ha bekapcsolod, hang és értesítés jelzi a napirendi sávok kezdését és végét.")+'</p>'+
     '<button class="btn'+(S.settings.alerts?"":" ghost")+'" data-act="alerts">'+(S.settings.alerts?"Kikapcsolás":"Bekapcsolás")+'</button>'+
     (S.settings.alerts&&"Notification"in window&&Notification.permission==="denied"?'<p class="muted small" style="margin-top:8px">A böngésző nem engedi az értesítést, ezért csak a hang szól.</p>':"")+'</div>';
   const pc=S.settings.pet;
-  h+='<h2>Kisállat</h2><div class="panel"><p style="margin-bottom:10px">'+(pc.on?"A kisállat a fókuszidővel egyre vidámabb, kedvesebb és ügyesebb lesz. Soha nem veszít el semmit, legfeljebb álmos, ha aznap még nem fókuszáltatok együtt.":"Kikapcsoltad.")+'</p>'+
+  h+='</details>'+sec("pet","Kisállat")+'<div class="panel"><p style="margin-bottom:10px">'+(pc.on?"A kisállat a fókuszidővel egyre vidámabb, kedvesebb és ügyesebb lesz. Soha nem veszít el semmit, legfeljebb álmos, ha aznap még nem fókuszáltatok együtt.":"Kikapcsoltad.")+'</p>'+
     '<div class="row" style="margin-bottom:12px"><button class="btn'+(pc.on?"":" ghost")+'" data-act="peton">'+(pc.on?"Kikapcsolás":"Bekapcsolás")+'</button></div>'+
     [[0,"Valódi"],[1,"Képzeletbeli"]].map(g=>'<p class="small muted" style="margin-bottom:4px">'+g[1]+'</p><div class="row chips" role="group" aria-label="'+g[1]+' kisállatok" style="margin-bottom:12px">'+
       Object.keys(PETS).filter(k=>!!PETS[k].fict===!!g[0]).map(k=>'<button data-act="pspecies" data-k="'+k+'" aria-pressed="'+(pc.species===k)+'">'+PETS[k].n+'</button>').join("")+'</div>').join("")+
     '<label class="field"><span>Neve</span><input type="text" maxlength="20" data-set="petname" value="'+esc(pc.name)+'" placeholder="'+esc(PETS[pc.species].def)+'" autocomplete="off"></label></div>';
   const eqs=S.settings.eq;
-  h+='<h2>Érzelmi fejlődés</h2><div class="panel"><p style="margin-bottom:10px">'+(eqs.on?"Apró, néhány perces gyakorlatok önismerethez, önszabályozáshoz, motivációhoz, empátiához és a kapcsolatokhoz. Mindig kihagyhatók.":"Kikapcsoltad.")+'</p>'+
+  h+='</details>'+sec("eq","Érzelmi fejlődés")+'<div class="panel"><p style="margin-bottom:10px">'+(eqs.on?"Apró, néhány perces gyakorlatok önismerethez, önszabályozáshoz, motivációhoz, empátiához és a kapcsolatokhoz. Mindig kihagyhatók.":"Kikapcsoltad.")+'</p>'+
     '<div class="row" style="margin-bottom:10px"><button class="btn'+(eqs.on?"":" ghost")+'" data-act="eqon">'+(eqs.on?"Kikapcsolás":"Bekapcsolás")+'</button></div>'+
     (eqs.on?'<p class="small" style="margin-bottom:4px">A mai kis lépés megjelenik:</p><div class="row chips" role="group" aria-label="Gyakoriság">'+[["napi","Naponta"],["3","Hétfőn, szerdán, pénteken"],["keres","Csak ha kérem"]].map(f=>'<button data-act="eqfreq" data-k="'+f[0]+'" aria-pressed="'+(eqs.freq===f[0])+'">'+f[1]+'</button>').join("")+'</div>':"")+'</div>';
-  h+='<p style="margin-top:18px"><button class="btn ghost sm" data-act="introAgain">A bemutató újra</button></p>';
-  h+='<h2>Adatok</h2><div class="panel"><p style="margin-bottom:10px">'+(syncOn?"A fiókodba mentjük az adataidat, így másik eszközön is ugyanezt látod.":"Az adataidat most ezen az eszközön, ebben a böngészőben tároljuk.")+'</p>'+
+  h+='</details>';
+  h+=sec("adat","Adatok és bemutató")+'<div class="panel"><p style="margin-bottom:12px"><button class="btn ghost sm" data-act="introAgain">A bemutató újra</button></p><p style="margin-bottom:10px">'+(syncOn?"A fiókodba mentjük az adataidat, így másik eszközön is ugyanezt látod.":"Az adataidat most ezen az eszközön, ebben a böngészőben tároljuk.")+'</p>'+
     '<p class="small" style="margin-bottom:8px">Mentsd el időnként az adataidat egy fájlba. Ebből másik gépen vagy böngészőben is visszatöltheted őket.</p>'+
     '<div class="row" style="margin-bottom:12px"><button class="btn sm" data-act="export">Mentés fájlba</button>'+
     '<label class="btn ghost sm" style="display:inline-flex;align-items:center;cursor:pointer;position:relative">Visszatöltés fájlból<input type="file" id="imp-file" accept="application/json,.json" style="position:absolute;width:1px;height:1px;opacity:0"></label></div>'+
     (pendingImport?'<div class="alert"><strong>A fájlban '+pendingImport.tasks.length+' feladat és '+pendingImport.sessions.length+' fókuszblokk van'+(pendingImport.updatedAt?', utoljára '+new Date(pendingImport.updatedAt).toLocaleString("hu-HU")+'-kor mentetted':'')+'.</strong> A visszatöltés a mostani adatokat lecseréli.'+
       '<div class="row"><button class="btn sm" data-act="impok">Visszatöltöm</button><button class="btn ghost sm" data-act="impno">Mégse</button></div></div>':"")+
-    '<button class="btn ghost" data-act="reset">'+(confirmReset?"Biztosan törlöm az összes adatot":"Minden adat törlése")+'</button></div>';
+    '<button class="btn ghost" data-act="reset">'+(confirmReset?"Biztosan törlöm az összes adatot":"Minden adat törlése")+'</button></div></details>';
   return h}
 
+const NAV_IC={ma:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  nap:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>',het:'<path d="M5 20V11M12 20V5M19 20v-7"/>',
+  este:'<path d="M20 14.5A8 8 0 0 1 9.5 4 7 7 0 1 0 20 14.5z"/>',beall:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'};
 function render(){if(!S.onboarded){document.getElementById("tabs").innerHTML="";document.getElementById("app").innerHTML=viewIntro();return}
   const beh=weekStatus().some(x=>x.behind);
   document.getElementById("tabs").innerHTML=[["ma","Ma"],["nap","Napirend"],["het","Hét"],["este","Este"],["beall","Beállítás"]].map(a=>
-    '<button data-act="tab" data-v="'+a[0]+'"'+(view===a[0]?' aria-current="page"':"")+'>'+a[1]+(a[0]==="het"&&beh?'<span class="dot" aria-label="elmaradás"></span>':"")+(a[0]==="ma"&&S.timer&&view!=="ma"?'<span class="dot" style="background:var(--ok)" aria-label="fut az időmérő"></span>':"")+'</button>').join("");
+    '<button data-act="tab" data-v="'+a[0]+'"'+(view===a[0]?' aria-current="page"':"")+'><svg viewBox="0 0 24 24" aria-hidden="true">'+NAV_IC[a[0]]+'</svg>'+a[1]+(a[0]==="het"&&beh?'<span class="dot" aria-label="elmaradás"></span>':"")+(a[0]==="ma"&&S.timer&&view!=="ma"?'<span class="dot" style="background:var(--ok)" aria-label="fut az időmérő"></span>':"")+'</button>').join("");
   const dOn=deep&&S.timer&&S.timer.phase==="focus";if(!dOn&&deep&&!(S.timer&&S.timer.phase==="focus"))deep=false;
   document.getElementById("app").innerHTML=({ma:viewMa,nap:viewNapirend,het:viewHet,este:viewEste,beall:viewBeall})[view]()+(dOn?deepHtml():"")+(breathOn?breathHtml():"");
   const want=dOn&&!S.timer.pausedAt?(S.settings.ambient||"csend"):"";if(want!==ambKind)ambient(want);
@@ -1351,6 +1452,12 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "pspecies":if(PETS[b.dataset.k]){S.settings.pet.species=b.dataset.k;save()}break;
     case "petpoke":petTrick("hearts");return;
     case "prename":petRename=true;break;
+    case "petmore":petMore=!petMore;break;
+    case "bopen":bOpen=bOpen===b.dataset.bid?null:b.dataset.bid;break;
+    case "eqopen":eqOpen=true;break;
+    case "simple":S.settings.simple=!S.settings.simple;save();break;
+    case "simpleoff":S.settings.simple=false;flash="Bekapcsoltuk a további funkciókat. Az Egyszerű módot a Beállításokban bármikor visszakapcsolhatod.";save();break;
+    case "focusadd":render();{const i=document.getElementById("f-title");if(i){i.scrollIntoView({block:"center"});i.focus()}}return;
     case "sugok":{const r=suggestDeep();r.out.forEach(x=>{x.t.blockId=x.b.id});S.sug[today()]="ok";flash=r.out.length+" feladat bekerült a napirendbe.";save();break}
     case "sugno":S.sug[today()]="skip";save();break;
     case "wsave":{const k=weekDates()[0],g=id=>{const e=document.getElementById(id);return e?e.value.trim():""};
@@ -1490,6 +1597,8 @@ document.addEventListener("change",e=>{const i=e.target,ds=i.dataset||{};
         sortBlocks(bl)}
       save()}}
   render()});
+/* Remembers which settings groups are open across re-renders. */
+document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.dataset&&d.dataset.sec){if(d.open)openSecs.add(d.dataset.sec);else openSecs.delete(d.dataset.sec)}},true);
 document.addEventListener("input",e=>{if(e.target.id==="s-min"&&e.target.value){startDur=Math.min(180,Math.max(5,+e.target.value||0));
     document.querySelectorAll('[data-act="sdur"]').forEach(x=>x.setAttribute("aria-pressed","false"))}});
 document.addEventListener("input",e=>{if(e.target.id==="f-plan"&&e.target.value){formPlan=+e.target.value||50;

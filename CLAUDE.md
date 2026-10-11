@@ -35,6 +35,9 @@ Users say "horarium" or "hirarium" to start a development session on it.
 - Focus: length chosen at start (`startDur`), `extend` adds 10 min; deep work mode (`deep`, `deepHtml()`, `ambient()` generated sound); soft block via `visibilitychange` keeps `away` seconds on the session.
 - `projNames()`/`projField()`: optional project on tasks and sessions. `weekReviewHtml()` (`S.weekly[monday]`), `monthHtml()`, `suggestDeep()` (`S.sug[date]`).
 - Emotional intelligence (`S.settings.eq`: `on`, `freq` napi/3/keres): `FEELS`/`recordFeel()` (`S.feel`), `EQ_STEPS` (5 areas × 8) with `eqToday()`/`eqHtml()` (`S.eqd[date]`), breathing with the pet (`breathOn`), `EQ_EVE` evening question, `feelHtml()` weekly map; when hard feelings dominate it invites the user to write instead of pointing elsewhere. `feelBox()` lets the user write what they feel and `kindReply()` answers kindly (theme in the text first, else the feeling's group). No helpline numbers. Tone: kind, optional, never judging.
+- Simplicity first: one main action per screen. `heroHtml()` is the Ma view's top card (current block, the task to start, countdown, one big button, the pet); below it at most one nudge at a time (morning question, else deep work suggestion, else the collapsed small step). `oneThingHtml()` shows the day's one thing; `petPanel(true)` is the compact pet card.
+- `S.settings.simple` (default on) hides projects, deep work mode and the detailed week statistics; `simpleoff` and the settings switch bring them back. Settings are grouped in `<details class="sec">` (`sec()`, open state in `openSecs`). Day plan blocks keep their changes behind one "…" button (`bOpen`).
+- Visual system: borderless cards with soft shadow (`--sh`), one accent (munka teal), mode colours only as small dots, icon + label bottom nav (`NAV_IC`).
 - `render()` rebuilds the view; the click handler at the bottom switches on `data-act`.
 
 ## Writing rules
