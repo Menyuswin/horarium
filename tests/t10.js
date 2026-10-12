@@ -9,13 +9,14 @@ ok(await pg.locator('.ipick button').count()===6,'six pets to pick');
 await pg.click('[data-act="introPick"][data-k="felho"]');await pg.fill('#intro-name','Bárányfelhő');
 await pg.click('[data-act="intro"][data-s="2"]');
 ok(await pg.evaluate(()=>S.settings.pet.species==='felho'&&S.settings.pet.name==='Bárányfelhő'),'pick + name saved');
-const moods=[];for(let s=2;s<=6;s++){moods.push(await pg.evaluate(()=>document.querySelector('.ipet svg').outerHTML.includes('class="tw"')));const t=await pg.textContent('#app');
-  if(s===4)ok(t.includes('Bárányfelhő együtt fejlődik veled'),'pet page uses the name');
+await pg.click('[data-act="intro"][data-s="3"]');
+const moods=[];for(let s=3;s<=7;s++){moods.push(await pg.evaluate(()=>document.querySelector('.ipet svg').outerHTML.includes('class="tw"')));const t=await pg.textContent('#app');
+  if(s===5)ok(t.includes('Bárányfelhő együtt fejlődik veled'),'pet page uses the name');
   await pg.click('[data-act="intro"][data-s="'+(s+1)+'"]')}
 ok(!moods[0]&&moods[4]===true,'pet gets happier through pages');
 ok((await pg.textContent('#app')).includes('Az első lépés'),'last page');
-await pg.click('[data-act="intro"][data-s="6"]');ok((await pg.textContent('#app')).includes('Este két perc'),'back works');
-await pg.click('[data-act="intro"][data-s="7"]');
+await pg.click('[data-act="intro"][data-s="7"]');ok((await pg.textContent('#app')).includes('Este két perc'),'back works');
+await pg.click('[data-act="intro"][data-s="8"]');
 await pg.fill('#intro-one','Megírom a bemutatkozó levelet');await pg.click('[data-act="introdone"][data-one="1"]');
 ok(await pg.evaluate(()=>S.onboarded&&S.tasks.some(t=>t.proud&&t.title==='Megírom a bemutatkozó levelet')),'finish creates the one thing');
 ok((await pg.textContent('#app')).includes('Megírom a bemutatkozó levelet')&&(await pg.textContent('#tabs')).includes('Napirend'),'app shown after intro');

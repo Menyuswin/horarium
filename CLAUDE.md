@@ -30,7 +30,7 @@ Read `HANDOFF.md` first: it holds the user's decisions, what is built, the deplo
 - `resizeBlock()` and `replanToday()`: duration buttons that push following blocks, and the re-plan of the rest of today.
 - `sessStats()`/`sessLessons()`: weekly statistics; lessons only with at least 8 rated blocks and a clear gap.
 - Pet: `PETS`, `petSvg()` (inline SVG, species, mood 0–4, level 0–6), `petPanel()`, `petTrick()` and CSS classes `t-<trick>`. Nothing is ever taken away from the pet.
-- `viewIntro()`: the first-visit guide (welcome, pet choice, four pages, first step). Shown while `S.onboarded` is false; old states with tasks or sessions count as onboarded.
+- `viewIntro()`: the first-visit guide (welcome, pet choice, daily rhythm setup, the pages, first step). Shown while `S.onboarded` is false; old states with tasks or sessions count as onboarded.
 - `morningHtml()`, `dayStory()` (evening sentences, varied per day by `dayPick()`), export/import in the settings view.
 - Logo: `logoSvg()` (hourglass: loose grains above, ordered blocks below); the favicon is a bolder inline SVG, the apple-touch-icon an embedded PNG.
 - Focus: length chosen at start (`startDur`), `extend` adds 10 min; deep work mode (`deep`, `deepHtml()`, `ambient()` generated sound); soft block via `visibilitychange` keeps `away` seconds on the session.
@@ -39,6 +39,8 @@ Read `HANDOFF.md` first: it holds the user's decisions, what is built, the deplo
 - Simplicity first: one main action per screen. `heroHtml()` is the Ma view's top card (current block, the task to start, countdown, one big button, the pet); below it at most one nudge at a time (morning question, else deep work suggestion, else the collapsed small step). `oneThingHtml()` shows the day's one thing; `petPanel(true)` is the compact pet card.
 - `S.settings.simple` (default on) hides projects, deep work mode and the detailed week statistics; `simpleoff` and the settings switch bring them back. Settings are grouped in `<details class="sec">` (`sec()`, open state in `openSecs`). Day plan blocks keep their changes behind one "…" button (`bOpen`). The day plan is a timeline (`timelineHtml()`): start times on a left axis, gaps kept, and an amber line at the current moment (`nowLine()`), moved every second by `countdown()` and re-rendered each new minute when nothing is being edited.
 - Visual system: borderless cards with soft shadow (`--sh`), one accent (munka teal), mode colours only as small dots, icon + label bottom nav (`NAV_IC`).
+- Layout: from 900 px width the nav is a fixed left column (brand, "Új feladat", five views, day band at the bottom); on phones it stays the bottom bar. `bandHtml()`/`updBand()` draw the day band (all of today's blocks, amber marker, current/next block caption) in `#band`, refreshed by `countdown()`; it opens the Napirend. `qaRender()`/`qaSave()`: the quick-add panel in `#qa`, opened by the "+" (`.fab` on phones, `.newbtn` in the left column) from any view, outside `render()` so typing is never lost.
+- Daily rhythm: `S.settings.rhythm` (`wake`, `ws`, `we`, `done`). `buildWd()` derives the weekday template from the three times, `applyRhythm()` writes it and refreshes the coming weekday plans that have no attached tasks. Asked in the intro (step 2, after the pet) and in Settings ("Napirend gyors beállítása"); old saved states count as done.
 - `render()` rebuilds the view; the click handler at the bottom switches on `data-act`.
 
 ## Token economy (the user asked for this)
