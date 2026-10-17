@@ -62,8 +62,14 @@ Read `HANDOFF.md` first: it holds the user's decisions, what is built, the deplo
 
 - Syntax: extract the `<script>` block and run `node --check` on it.
 - Behaviour: headless Chromium with `playwright-core`. The checks live in `tests/` (one file per feature, `t01.js`…; `env.js` finds the app and Chromium). Run them all with `NODE_PATH=/opt/node-tools/node_modules tests/run.sh`; it lists every FAIL and exits non-zero. Add a new `tNN.js` for each new feature and keep the existing ones passing. Screenshots go to a temp folder, never into the repo.
+- On this local machine (not the cloud sandbox) `/opt/node-tools` and `/opt/pw-browsers` don't exist. `npm install playwright-core` into a scratch dir and point `CHROMIUM` at the cached binary instead, e.g.:
+  `NODE_PATH=<scratch>/node_modules CHROMIUM=$(find ~/.cache/ms-playwright -name chrome -path '*chrome-linux64*') tests/run.sh`
 
 ## Git and publishing
 
 - Commit with the repo's author identity (`Menyuswin`) through `git -c user.name=... -c user.email=...`. The machine has no global git identity.
-- Push to `main` and republish the Claude artifact only when the user asks.
+- Push to `main` and republish the Claude artifact only when the user asks. The harness's own auto-mode classifier blocks `git push` as a destructive action by default — expect a permission prompt (or an outright denial needing the user's explicit go-ahead) even after the user has said yes in principle.
+
+## Session log
+
+- 2026-10-17: this local checkout was 29 commits behind `origin/main` (a cloud session had already built the pet/EQ/focus-timer system on top of the original block-based day plan). Fast-forwarded first, then implemented the free-scheduling redesign described above (removed templates/blocks; tasks get their own `start`; overlap warning; `carryOver()`; task splitting; per-species `petSound()`). Pushed to `main` (`a58bfd5`) and republished the Claude artifact. Local test run (24/24 passing) verified independently of the implementing session before publishing.
