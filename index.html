@@ -87,6 +87,7 @@ ul.tasks{list-style:none;margin:0;padding:0}
 .task .meta{display:block;font-size:.88rem;color:var(--muted)}
 .task .meta em{font-style:normal;color:var(--c);font-weight:700}
 .task .late{color:var(--warn);font-weight:700}
+.task.now{outline:2px solid #E0A12E;outline-offset:0}
 .task .play{width:44px;height:44px;flex:none;border-radius:50%;background:var(--c);color:var(--surface);font-size:15px;display:grid;place-items:center}
 .task .more{border-top:1px solid var(--line);padding:8px}
 .slot{border:1px dashed var(--line);border-radius:10px;padding:11px 14px;color:var(--muted);margin-bottom:8px;font-size:.95rem}
@@ -318,26 +319,17 @@ const MAX_FOCUS_BLOCKS=6;
 const BREAK_TIPS=["Állj fel, és nyújtózz két percet.","Igyál egy pohár vizet.","Nézz ki az ablakon húsz másodpercig.","Menj ki a szobából, és járj egy kört.","Ne nyisd meg a telefont és a közösségi oldalakat: a szünet pihenés legyen.","Lazítsd el a vállad, és lélegezz lassan néhányat."];
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
-function blk(start,end,title,mode,kind){const b={id:uid(),start,end,title,mode:mode||""};if(kind)b.kind=kind;return b}
-function defTemplates(){return{
-  wd:[blk("07:00","08:00","Tanulás","tanulas"),blk("08:00","09:00","Reggeli, készülődés","pihenes"),
-      blk("09:00","12:30","Munka","munka"),blk("12:30","13:30","Ebéd","pihenes"),blk("13:30","16:30","Munka","munka"),
-      blk("17:00","18:00","Edzés","edzes","edzes"),blk("18:30","20:00","Szabadprogram","szabad"),blk("20:00","22:00","Esti pihenés","pihenes")],
-  we:[blk("07:30","08:30","Reggeli, lassú indulás","pihenes"),blk("08:30","10:30","Tanulás","tanulas"),
-      blk("11:00","12:00","Edzés","edzes","edzes"),blk("12:30","13:30","Ebéd","pihenes"),
-      blk("14:30","18:30","Szabadprogram","szabad"),blk("19:00","22:00","Esti pihenés","pihenes")]}}
 function defTargets(){return{tanulas:{wd:5,we:2},munka:{wd:30,we:0},szabad:{wd:7,we:6},pihenes:{wd:15,we:8},edzes:{wd:5,we:2}}}
 function defaults(){return{v:2,updatedAt:0,
-  settings:{targets:defTargets(),focus:50,brk:10,travel:20,templates:defTemplates(),pet:{on:true,species:"kutya",name:""},eq:{on:true,freq:"napi"},simple:true},
-  tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{},sessions:[],reflect:null,petMins:0,morning:{},onboarded:false,weekly:{},sug:{},feel:[],eqd:{},eqDone:0,breaths:0}}
+  settings:{targets:defTargets(),focus:50,brk:10,pet:{on:true,species:"kutya",name:""},eq:{on:true,freq:"napi"},simple:true},
+  tasks:[],log:{},hourLog:{},reviews:{},timer:null,plan:{},sessions:[],reflect:null,petMins:0,morning:{},onboarded:false,weekly:{},sug:{},feel:[],eqd:{},eqDone:0,breaths:0,lastSeen:""}}
 function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=d.settings||{};
   const s=Object.assign(b,d);s.v=2;
   s.settings=Object.assign(b.settings,ds);
   const tg=defTargets();MK.forEach(k=>{const t=(ds.targets||{})[k];
     if(t&&typeof t==="object")tg[k]={wd:+t.wd||0,we:+t.we||0};});
   s.settings.targets=tg;
-  const tp=ds.templates;
-  s.settings.templates=(tp&&Array.isArray(tp.wd)&&Array.isArray(tp.we))?tp:defTemplates();
+  s.lastSeen=typeof d.lastSeen==="string"?d.lastSeen:"";
   s.tasks=Array.isArray(d.tasks)?d.tasks:[];s.log=d.log||{};s.hourLog=d.hourLog||{};s.reviews=d.reviews||{};s.timer=d.timer||null;s.plan=d.plan||{};s.sessions=Array.isArray(d.sessions)?d.sessions:[];s.reflect=d.reflect||null;s.petMins=Math.max(0,+d.petMins||0);
   s.settings.pet=Object.assign({on:true,species:"kutya",name:""},ds.pet||{});
   s.morning=d.morning&&typeof d.morning==="object"?d.morning:{};s.weekly=d.weekly&&typeof d.weekly==="object"?d.weekly:{};s.sug=d.sug&&typeof d.sug==="object"?d.sug:{};
@@ -347,11 +339,13 @@ function normalize(d){d=JSON.parse(JSON.stringify(d||{}));const b=defaults(),ds=
   if(["kutya","macska","nyul","horcsog","felho","moha"].indexOf(s.settings.pet.species)<0)s.settings.pet.species="kutya";
   s.settings.pet.name=String(s.settings.pet.name||"").slice(0,20);return s}
 
-let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,confirmReset=false,confirmDay=false,pendingImport=null,petRename=false,introStep=0,
-    flash="",startFor=null,startDur=0,capOpen=false,deep=false,awayNote="",feelSel="",feelPet="",petMore=false,eqOpen=false,bOpen=null,openSecs=new Set(),feelReply="",feelOpen=false,breathOn=0,eqAsk=false,syncOn=false,pDate=null,editPlan=false,editId=null,editMode="munka";
-/* Edit form for a task that is already on a day. Shown in place of its action row. */
+let S=defaults(),view="ma",dayOff=0,openId=null,formMode="munka",formPlan=50,confirmReset=false,pendingImport=null,petRename=false,introStep=0,
+    flash="",startFor=null,startDur=0,capOpen=false,deep=false,awayNote="",feelSel="",feelPet="",petMore=false,eqOpen=false,openSecs=new Set(),feelReply="",feelOpen=false,breathOn=0,eqAsk=false,syncOn=false,pDate=null,editId=null,editMode="munka";
+/* Edit form for a task that is already on a day. Shown in place of its action row. Date and start are its own schedule: a blank start leaves it unscheduled. */
 function taskForm(t){return '<div class="panel" style="margin-top:4px"><label class="field"><span class="small">Cím</span><input type="text" id="e-title" maxlength="120" value="'+esc(t.title)+'" autocomplete="off"></label>'+
-  '<div class="modes" role="group" aria-label="Mód">'+MK.filter(k=>k!=="edzes").map(k=>'<button data-act="emode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(editMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
+  '<div class="modes" role="group" aria-label="Mód">'+MK.map(k=>'<button data-act="emode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(editMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
+  '<label class="field"><span class="small">Dátum</span><input type="date" id="e-date" value="'+t.date+'"></label>'+
+  '<label class="field"><span class="small">Kezdés (nem kötelező)</span><input type="time" id="e-start" step="300" value="'+(t.start?esc(t.start):"")+'"></label>'+
   '<label class="field"><span class="small">Tervezett idő (perc)</span><input type="number" id="e-plan" min="5" max="600" step="5" inputmode="numeric" value="'+t.plan+'"></label>'+projField("e-proj",t.project)+
   '<div class="row"><button class="btn sm" data-act="esave" data-id="'+t.id+'">Mentés</button><button class="btn ghost sm" data-act="ecancel">Mégse</button></div></div>'}
 /* Projects are free names on tasks; the field offers the names already in use. */
@@ -408,61 +402,21 @@ async function pushDb(){if(!dbDoc||dbBusy)return;dbBusy=true;dbDirty=false;
   render()}catch(e){}})();
 
 /* ---------- plan (napirend) ---------- */
-function ensurePlan(d){if(!S.plan[d]){const tpl=S.settings.templates[dtype(d)]||[];
-  S.plan[d]={blocks:tpl.map(b=>Object.assign({},b,{id:uid()})).sort((a,b)=>tm(a.start)-tm(b.start)),workout:"",workoutDone:false}}
-  return S.plan[d]}
-function getBlocks(scope){return(scope==="wd"||scope==="we")?S.settings.templates[scope]:ensurePlan(scope).blocks}
-function sortBlocks(bl){bl.sort((a,b)=>tm(a.start)-tm(b.start)||tm(a.end)-tm(b.end))}
-const CHANGE=10;
-/* Where a block of one day lands after moving by delta minutes, keeping its length. A swim keeps room for the travel and changing before and after it. */
-function blockSpan(d,b,delta){const p=ensurePlan(d),len=tm(b.end)-tm(b.start),pad=(b.kind==="edzes"&&p.workout==="uszas")?CHANGE+(+S.settings.travel||0):0;
-  const s=Math.min(1439-pad-len,Math.max(pad,tm(b.start)+delta));return[s,s+len]}
-function moveBlock(d,bid,delta){const p=ensurePlan(d),b=p.blocks.find(x=>x.id===bid);if(!b)return;
-  const[s,e]=blockSpan(d,b,delta);b.start=hm(s);b.end=hm(e);sortBlocks(p.blocks)}
-/* Resize a block by changing its end. Growing pushes the following blocks that would overlap, keeping their lengths;
-   shrinking just leaves a gap. Returns a short message for the user. */
-function resizeBlock(d,bid,delta){const p=ensurePlan(d),bl=p.blocks;sortBlocks(bl);const i=bl.findIndex(x=>x.id===bid);if(i<0)return"";
-  const padOf=c=>(c.kind==="edzes"&&p.workout==="uszas")?CHANGE+(+S.settings.travel||0):0;
-  const b=bl[i],s0=tm(b.start),ne=tm(b.end)+delta;
-  if(ne-s0<10)return"A sáv legalább 10 perces marad.";
-  if(ne+padOf(b)>1439)return"Nem fér be: a sáv az éjfélnél tovább tartana.";
-  const moves=[];let end=ne;
-  if(delta>0)for(let j=i+1;j<bl.length;j++){const c=bl[j],cs=tm(c.start),len=tm(c.end)-cs;if(cs>=end)break;
-    if(end+len+padOf(c)>1439)return"Nem fér be: a következő sávok az éjfélen túlnyúlnának.";
-    moves.push([c,end,end+len]);end+=len}
-  b.end=hm(ne);moves.forEach(m=>{m[0].start=hm(m[1]);m[0].end=hm(m[2])});
-  return moves.length?"A következő "+moves.length+" sáv később kezdődik, hogy ne ütközzön.":""}
-/* Re-plan the rest of today: open tasks left in blocks that already ended move to the next suitable block,
-   then the remaining time is compared with what the open tasks still ask for. The tone stays neutral on purpose. */
-function replanToday(){const d=today(),p=ensurePlan(d),n=new Date(),nm=n.getHours()*60+n.getMinutes();
-  const bl=p.blocks.filter(b=>b.kind!=="edzes");sortBlocks(bl);
-  const ended=new Set(bl.filter(b=>tm(b.end)<=nm).map(b=>b.id)),up=bl.filter(b=>tm(b.end)>nm);
-  const stray=S.tasks.filter(t=>t.date===d&&!t.completed&&ended.has(t.blockId));let moved=0,loose=0;
-  stray.forEach(t=>{const g=up.find(b=>b.mode===t.mode)||up.find(b=>b.mode&&b.mode!=="pihenes");
-    if(g){t.blockId=g.id;moved++}else{t.blockId=null;loose++}});
-  const avail=up.reduce((a,b)=>a+Math.max(0,tm(b.end)-Math.max(nm,tm(b.start))),0),
-    need=S.tasks.filter(t=>t.date===d&&!t.completed).reduce((a,t)=>a+Math.max(0,t.plan-(t.done||0)),0);
-  let m=moved||loose?(moved?moved+" feladat átkerült a hátralévő sávokba. ":"")+(loose?loose+" feladat sáv nélkül maradt, mert ma már nincs több megfelelő sáv. ":""):"Minden a helyén van, nincs mit átrendezni. ";
-  m+="A hátralévő sávokban "+fm(avail)+" van, a nyitott feladatok "+fm(need)+" időt kérnek.";
-  if(need>avail)m+=" A különbség "+fm(need-avail)+". Nem kell mindent ma megcsinálni, a „Holnapra” gombbal néhányat elengedhetsz.";
-  return m}
-/* Dragging by the grip: 1.5 px per minute, snapped to 5 minutes. The block follows the pointer and is saved on release. */
-const DRAG_PX=1.5;
-let drag=null;
-function dayItems(d){const p=ensurePlan(d),out=[],tr=+S.settings.travel||0;
-  p.blocks.forEach(b=>{const s=tm(b.start),e=tm(b.end);out.push({type:"block",b,s,e});
-    if(b.kind==="edzes"&&p.workout==="uszas"){
-      if(tr>0)out.push({type:"travel",s:s-CHANGE-tr,e:s-CHANGE,label:"Út az uszodába"});
-      out.push({type:"travel",s:s-CHANGE,e:s,label:"Öltözés az úszás előtt"});
-      out.push({type:"travel",s:e,e:e+CHANGE,label:"Öltözés az úszás után"});
-      if(tr>0)out.push({type:"travel",s:e+CHANGE,e:e+CHANGE+tr,label:"Út haza az uszodából"})}});
-  const off=x=>x.type==="block"&&x.b.kind==="edzes"&&p.workout==="nincs";
-  out.sort((a,b)=>a.s-b.s||a.e-b.e);
-  out.forEach(x=>{x.conf=!off(x)&&out.some(y=>y!==x&&!off(y)&&x.s<y.e&&y.s<x.e)});
-  return out}
-function dayPlanMins(d){const p=ensurePlan(d),by={};MK.forEach(k=>by[k]=0);
-  p.blocks.forEach(b=>{if(b.mode&&by[b.mode]!==undefined&&!(b.kind==="edzes"&&p.workout==="nincs"))by[b.mode]+=Math.max(0,tm(b.end)-tm(b.start))});return by}
-function workoutMins(p){const b=p.blocks.find(x=>x.kind==="edzes");return b?Math.max(0,tm(b.end)-tm(b.start)):60}
+/* No more pre-filled schedule: a day only holds the workout choice. Tasks carry their own time (see overlaps()/taskHtml). */
+function ensurePlan(d){if(!S.plan[d])S.plan[d]={workout:"",workoutDone:false};return S.plan[d]}
+function dayPlanMins(d){const by={};MK.forEach(k=>by[k]=0);
+  S.tasks.filter(t=>t.date===d).forEach(t=>{if(by[t.mode]!==undefined)by[t.mode]+=t.plan});return by}
+function workoutMins(d,p){const t=S.tasks.find(x=>x.date===d&&x.mode==="edzes"&&x.start);return t?t.plan:60}
+/* Other tasks on the same date whose own [start, start+plan) window intersects this one's. A warning, never a block. */
+function overlaps(date,start,planMin,excludeId){const s=tm(start),e=s+planMin;
+  return S.tasks.filter(x=>x.id!==excludeId&&x.date===date&&x.start&&s<tm(x.start)+x.plan&&tm(x.start)<e)}
+function overlapFlash(ov){return ov.length?"Figyelem: ütközik "+ov.map(x=>'„'+x.title+'” ('+x.start+'–'+hm(tm(x.start)+x.plan)+')').join(", ")+" idősávjával.":""}
+/* Unfinished tasks from earlier days move to today automatically, losing their old time so they can get a new one. Runs once per calendar day. */
+function carryOver(){const t=today();if(S.lastSeen===t)return;
+  const st=stale();
+  if(st.length){st.forEach(x=>{x.date=t;x.start=null;x.postponed=(x.postponed||0)+1});
+    flash=st.length+" befejezetlen feladat átkerült mára. Adj nekik új időpontot."}
+  S.lastSeen=t;save();if(st.length)render()}
 
 /* ---------- domain ---------- */
 function find(id){return S.tasks.find(t=>t.id===id)}
@@ -497,30 +451,44 @@ function beep(){try{if(!actx)return;let t=actx.currentTime+.05;
   if(navigator.vibrate)navigator.vibrate([200,100,200,100,200])}catch(e){}}
 function notify(title,body){try{if("Notification"in window&&Notification.permission==="granted")new Notification(title,{body:body||"",tag:"horarium"})}catch(e){}}
 function askNotify(){try{if("Notification"in window&&Notification.permission==="default")Notification.requestPermission()}catch(e){}}
-/* Sound and notification for schedule blocks that start or end. Runs while the page is open. */
+/* A short, species-fitting sound for the pet, used only for the schedule alerts below (never the focus-timer melody). */
+function petSound(species){try{if(!actx)return;const t=actx.currentTime+.03;
+  const tone=(f0,f1,d,type,vol)=>{const os=actx.createOscillator(),g=actx.createGain();os.type=type||"sine";
+    os.frequency.setValueAtTime(f0,t);if(f1)os.frequency.exponentialRampToValueAtTime(f1,t+d);
+    os.connect(g);g.connect(actx.destination);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol||.2,t+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,t+d);os.start(t);os.stop(t+d+.02)};
+  if(species==="macska")tone(420,820,.22,"sine",.18);
+  else if(species==="nyul"){tone(1600,1900,.07,"sine",.12);setTimeout(()=>{try{tone(1700,2000,.07,"sine",.12)}catch(e){}},110)}
+  else if(species==="horcsog"){tone(2200,2500,.05,"sine",.1);setTimeout(()=>{try{tone(2300,2600,.05,"sine",.1)}catch(e){}},70);setTimeout(()=>{try{tone(2400,2700,.05,"sine",.1)}catch(e){}},140)}
+  else if(species==="felho")tone(300,900,.5,"sine",.1);
+  else if(species==="moha")tone(180,110,.25,"triangle",.22);
+  else{tone(180,null,.09,"square",.22);setTimeout(()=>{try{tone(220,null,.1,"square",.22)}catch(e){}},130)}
+  if(navigator.vibrate)navigator.vibrate(90)}catch(e){}}
+/* Sound, pet trick and notification when a scheduled task starts or its time is up. Runs while the page is open. */
 let alertStamp=Date.now();
-function alertsDue(){const now=Date.now(),from=Math.max(alertStamp,now-30000);alertStamp=now;
+function alertsDue(){carryOver();
+  const now=Date.now(),from=Math.max(alertStamp,now-30000);alertStamp=now;
   if(!S.settings.alerts||(deep&&S.timer&&S.timer.phase==="focus"))return;
-  const d=today(),p=S.plan[d];if(!p)return;const base=parseD(d).getTime(),msgs=[];
+  const d=today(),base=parseD(d).getTime(),msgs=[];
   const hit=m=>{const ms=base+m*60000;return ms>from&&ms<=now};
-  p.blocks.forEach(b=>{if(b.kind==="edzes"&&p.workout==="nincs")return;
-    if(hit(tm(b.start)))msgs.push({title:"Indul: "+b.title,body:b.start+"–"+b.end});
-    if(hit(tm(b.end)))msgs.push({title:"Lejárt az idő: "+b.title,body:"Vége: "+b.end})});
+  S.tasks.filter(t=>t.date===d&&t.start&&!t.completed).forEach(t=>{const s=tm(t.start);
+    if(hit(s))msgs.push({title:"Kezdődik: "+t.title,body:t.start+"–"+hm(s+t.plan),trick:"hop"});
+    if(hit(s+t.plan))msgs.push({title:"Letelt az idő: "+t.title,body:"Vége: "+hm(s+t.plan),trick:"spin"})});
   if(!msgs.length)return;
-  beep();msgs.forEach(x=>notify(x.title,x.body));
+  if(S.settings.pet.on)petSound(S.settings.pet.species);
+  msgs.forEach(x=>{notify(x.title,x.body);if(S.settings.pet.on)petTrick(x.trick)});
   flash=msgs.map(x=>x.title).join(" · ");render()}
 setInterval(alertsDue,15000);
-/* Countdowns: time left in the current schedule block, and in the running task's plan. */
+/* Countdowns: time left in the current scheduled task, and in the running task's plan. */
 function clock(sec){sec=Math.max(0,Math.ceil(sec));return String(Math.floor(sec/3600)).padStart(2,"0")+":"+String(Math.floor(sec%3600/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")}
 let napMin=-1;
 function countdown(){const now=Date.now();
   const nd=new Date(),nmm=nd.getHours()*60+nd.getMinutes();
-  document.querySelectorAll(".nowline[data-s]").forEach(el=>{const s=+el.dataset.s,e=+el.dataset.e;if(e-s>1)el.style.top=Math.max(0,Math.min(100,(nmm-s)/(e-s)*100))+"%";const sp=el.querySelector("span");if(sp)sp.textContent=hm(nmm)});
-  if(view==="nap"&&!editPlan&&!drag&&nmm!==napMin){const a=document.activeElement,busy=a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName);if(napMin>=0&&!busy){napMin=nmm;render();return}napMin=nmm}
+  if(view==="nap"&&nmm!==napMin){const a=document.activeElement,busy=a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName);if(napMin>=0&&!busy){napMin=nmm;render();return}napMin=nmm}
   const cdNow=document.getElementById("cd-now");
-  if(cdNow){const d=today(),p=S.plan[d];
-    const n=new Date(),nm=n.getHours()*60+n.getMinutes(),cur=p&&p.blocks.find(b=>!(b.kind==="edzes"&&p.workout==="nincs")&&tm(b.start)<=nm&&nm<tm(b.end));
-    if(cur)cdNow.textContent=clock((parseD(d).getTime()+tm(cur.end)*60000-now)/1000)}
+  if(cdNow){const d=today(),n=new Date(),nm=n.getHours()*60+n.getMinutes();
+    const cur=S.tasks.find(t=>t.date===d&&t.start&&tm(t.start)<=nm&&nm<tm(t.start)+t.plan);
+    if(cur)cdNow.textContent=clock((parseD(d).getTime()+(tm(cur.start)+cur.plan)*60000-now)/1000)}
   const cdTask=document.getElementById("cd-task");
   if(cdTask&&S.timer){const t=S.timer,task=find(t.taskId);
     if(task){const elapsed=t.phase==="focus"?Math.min(tNow(t)-t.startAt,t.durMs)/1000:0;
@@ -564,69 +532,41 @@ function tick(){const t=S.timer;if(!t)return;const now=tNow(t),end=t.startAt+t.d
 setInterval(tick,500);
 
 /* ---------- shared html ---------- */
+/* "x/y. rész" when a task has been split into several occurrences (t.splitId), ordered by date then start. */
+function splitLabel(t){if(!t.splitId)return"";
+  const g=S.tasks.filter(x=>x.splitId===t.splitId).sort((a,b)=>(a.date+(a.start||"99:99")).localeCompare(b.date+(b.start||"99:99")));
+  const i=g.findIndex(x=>x===t);return i>=0?" · "+(i+1)+"/"+g.length+". rész":""}
 function taskHtml(t,isToday){const run=S.timer&&S.timer.taskId===t.id&&S.timer.phase==="focus";
-  const late=(t.postponed||0)>=3;
-  let h='<li class="task'+(t.completed?" done":"")+'" style="--c:var(--'+t.mode+')"><div class="top">'+
+  const late=(t.postponed||0)>=3,n=new Date(),nm=n.getHours()*60+n.getMinutes();
+  const nowOn=!!t.start&&t.date===today()&&tm(t.start)<=nm&&nm<tm(t.start)+t.plan;
+  const ov=t.start?overlaps(t.date,t.start,t.plan,t.id):[];
+  let h='<li class="task'+(t.completed?" done":"")+(nowOn?" now":"")+'" style="--c:var(--'+t.mode+')"><div class="top">'+
     '<button class="check" data-act="done" data-id="'+t.id+'" aria-label="'+(t.completed?"Visszaállítom":"Kész")+'"><span>'+(t.completed?"✓":"")+'</span></button>'+
     '<button class="body" data-act="open" data-id="'+t.id+'" aria-expanded="'+(openId===t.id)+'"><span class="title">'+(t.star?"★ ":"")+esc(t.title)+'</span>'+
-    '<span class="meta"><em>'+MODES[t.mode]+'</em>'+(t.project?' · '+esc(t.project):"")+', terv: '+fm(t.plan)+(t.done?", eddig "+fm(t.done):"")+
-    (t.postponed?' <span class="'+(late?"late":"")+'">· '+t.postponed+'× tolódott</span>':"")+'</span></button>';
+    '<span class="meta">'+(t.start?'<b>'+t.start+"–"+hm(tm(t.start)+t.plan)+'</b> · ':"")+'<em>'+MODES[t.mode]+'</em>'+(t.project?' · '+esc(t.project):"")+splitLabel(t)+', terv: '+fm(t.plan)+(t.done?", eddig "+fm(t.done):"")+
+    (t.postponed?' <span class="'+(late?"late":"")+'">· '+t.postponed+'× tolódott</span>':"")+(ov.length?' <span class="late">· ütközik</span>':"")+'</span></button>';
   if(isToday&&!t.completed&&!run)h+='<button class="play" data-act="start" data-id="'+t.id+'" aria-label="Fókuszblokk indítása">▶</button>';
   h+='</div>';
-  if(openId===t.id){const bl=ensurePlan(t.date).blocks.filter(b=>b.kind!=="edzes");
+  if(openId===t.id){
     h+='<div class="more">';
     if(late&&!t.completed)h+='<p class="small late" style="margin-bottom:8px">Harmadszor is elhalasztottad. Érdemes dönteni: bontsd kisebbre, tedd fix időpontra, vagy töröld.</p>';
-    h+='<label class="field"><span class="small">Napirendi sáv</span><select data-assign="'+t.id+'"><option value="">Nincs sávja</option>'+
-      bl.map(b=>'<option value="'+b.id+'"'+(t.blockId===b.id?" selected":"")+'>'+b.start+"–"+b.end+" "+esc(b.title)+'</option>').join("")+'</select></label>';
+    if(ov.length)h+='<p class="small late" style="margin-bottom:8px">Ütközik: '+ov.map(x=>'„'+esc(x.title)+'” ('+x.start+'–'+hm(tm(x.start)+x.plan)+')').join(", ")+'.</p>';
     h+=editId===t.id?taskForm(t):'<div class="row"><button class="btn ghost sm" data-act="edit" data-id="'+t.id+'">Szerkesztés</button><button class="btn ghost sm" data-act="plan" data-d="-10" data-id="'+t.id+'">− 10 p</button>'+
     '<button class="btn ghost sm" data-act="plan" data-d="10" data-id="'+t.id+'">+ 10 p</button>'+
     '<button class="btn ghost sm" data-act="star" data-id="'+t.id+'">'+(t.star?"Kiemelés törlése":"A három közé")+'</button>'+
     (isToday&&!t.completed?'<button class="btn ghost sm" data-act="postpone" data-id="'+t.id+'">Holnapra</button>':"")+
+    '<button class="btn ghost sm" data-act="split" data-id="'+t.id+'">Új alkalom</button>'+
     '<button class="btn ghost sm" data-act="del" data-id="'+t.id+'">Törlés</button></div></div>'}
   return h+'</li>'}
-
-function blockRows(bl,scope){
-  return bl.map(b=>{const at='data-bs="'+scope+'" data-bid="'+b.id+'"';
-    return '<div class="brow">'+
-    '<label class="field"><span class="small">Kezdés</span><input type="time" step="300" value="'+esc(b.start)+'" '+at+' data-bf="start"></label>'+
-    '<label class="field"><span class="small">Vége</span><input type="time" step="300" value="'+esc(b.end)+'" '+at+' data-bf="end"></label>'+
-    '<label class="field full"><span class="small">Megnevezés</span><input type="text" maxlength="60" value="'+esc(b.title)+'" '+at+' data-bf="title"></label>'+
-    (b.kind==="edzes"?'<p class="muted small full">Edzés-sáv: ide kerül az úszás vagy a torna.</p>'
-      :'<label class="field full"><span class="small">Mód</span><select '+at+' data-bf="mode"><option value="">Nincs (általános sáv)</option>'+
-        MK.filter(k=>k!=="edzes").map(k=>'<option value="'+k+'"'+(b.mode===k?" selected":"")+'>'+MODES[k]+'</option>').join("")+'</select></label>')+
-    '<div class="full"><button class="btn ghost sm" data-act="bdel" data-s="'+scope+'" data-bid="'+b.id+'">Sáv törlése</button></div></div>'}).join("")}
-function addBlockBtns(scope){const bl=getBlocks(scope);
-  return '<div class="row" style="margin-top:10px"><button class="btn ghost sm" data-act="baddblock" data-s="'+scope+'">Sáv hozzáadása</button>'+
-    (bl.some(b=>b.kind==="edzes")?"":'<button class="btn ghost sm" data-act="baddblock" data-s="'+scope+'" data-k="edzes">Edzés-sáv hozzáadása</button>')+'</div>'}
 function workoutSeg(d,cur){return '<div class="seg" role="group" aria-label="Edzés fajtája">'+Object.keys(WORKOUTS).map(v=>
   '<button data-act="wset" data-d="'+d+'" data-v="'+v+'" aria-pressed="'+(cur===v)+'">'+WORKOUTS[v]+'</button>').join("")+'</div>'}
-function gripHtml(d,b){return '<button class="grip" data-grip="1" data-d="'+d+'" data-bid="'+b.id+'" aria-label="Húzd az áthelyezéshez">⋮⋮</button>'}
-function durRow(d,b){return '<div class="row" role="group" aria-label="Időtartam" style="margin-top:8px"><span class="small muted">Időtartam:</span>'+
-  [[-15,"−15 p"],[-5,"−5 p"],[5,"+5 p"],[15,"+15 p"]].map(x=>'<button class="btn ghost sm" data-act="bdur" data-d="'+d+'" data-bid="'+b.id+'" data-m="'+x[0]+'">'+x[1]+'</button>').join("")+'</div>'}
-function moveRow(d,b){return '<div class="row" role="group" aria-label="Áthelyezés" style="margin-top:8px"><span class="small muted">Áthelyezés:</span>'+
-  [[-60,"−1 ó"],[-30,"−30 p"],[30,"+30 p"],[60,"+1 ó"]].map(x=>'<button class="btn ghost sm" data-act="bmove" data-d="'+d+'" data-bid="'+b.id+'" data-m="'+x[0]+'">'+x[1]+'</button>').join("")+'</div>'}
 
 /* ---------- views ---------- */
-function nowPanel(){const d=today(),p=ensurePlan(d),items=dayItems(d).filter(x=>x.type==="block"&&!(x.b.kind==="edzes"&&p.workout==="nincs"));
-  const n=new Date(),nm=n.getHours()*60+n.getMinutes(),cur=items.find(x=>x.s<=nm&&nm<x.e),nxt=items.find(x=>x.s>nm);
-  let h='<div class="panel" style="margin-bottom:14px"><h3>A napirendből</h3>'+
-    '<p style="margin-top:6px">'+(cur?'<b>Most:</b> '+hm(cur.s)+"–"+hm(cur.e)+" "+esc(cur.b.title):'<span class="muted">Most nincs sáv.</span>')+'</p>'+
-    (cur?'<p class="muted">Hátra a sávból: <b id="cd-now" style="font-variant-numeric:tabular-nums"></b></p>':"")+
-    (nxt?'<p class="muted">Következő: '+hm(nxt.s)+"–"+hm(nxt.e)+" "+esc(nxt.b.title)+'</p>':"");
-  const open=x=>x&&items.length&&S.tasks.find(t=>t.date===d&&t.blockId===x.b.id&&!t.completed),cand=open(cur)||open(nxt);
-  if(cand&&!S.timer)h+='<p style="margin-top:8px"><button class="btn sm" data-act="start" data-id="'+cand.id+'">▶ Indítás: '+esc(cand.title)+'</button></p>';
-  const wb=p.blocks.find(b=>b.kind==="edzes");
-  if(wb){
-    h+='<p style="margin:10px 0 6px"><b>Edzés ma:</b> '+(p.workout?WORKOUTS[p.workout]+(p.workoutDone?", megvolt":""):'<span class="muted">még nincs kiválasztva</span>')+' <span class="muted small">'+wb.start+"–"+wb.end+'</span></p>'+workoutSeg(d,p.workout)+moveRow(d,wb)}
-  return h+'<p style="margin-top:10px"><button data-act="gonap" style="text-decoration:underline">Teljes napirend megnyitása</button></p></div>'}
 
 function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff===0;
   const tasks=S.tasks.filter(t=>t.date===d);
   let h='<div class="head"><div class="brand">'+logoSvg()+'<div><h1>Horárium</h1><p class="date">'+longDate(now)+'</p></div></div></div>';
   if(flash){h+='<div class="alert" role="status">'+esc(flash)+'</div>';flash=""}
-  const st=stale();
-  if(st.length)h+='<div class="alert"><strong>'+st.length+' befejezetlen feladat maradt a korábbi napokról.</strong>'+
-    '<div class="row"><button class="btn sm" data-act="carry">Áthozom mára</button><button class="btn ghost sm" data-act="drop">Elengedem</button></div></div>';
   if(tasks.length>MAX_FOCUS_BLOCKS)h+='<div class="alert"><strong>'+tasks.length+' fókuszblokkot osztottál be erre a napra.</strong> Több mint '+MAX_FOCUS_BLOCKS+' már túlterhelés. Érdemes néhányat másik napra tenni, vagy törölni.</div>';
   const rs=S.reflect&&S.sessions.find(y=>y.id===S.reflect);
   if(rs)h+='<div class="panel" style="margin-bottom:14px"><p class="muted small">Lezárt blokk: '+esc(rs.title)+', '+fm(rs.actual)+'</p><h3 style="margin:4px 0 8px">Hogyan sikerült?</h3>'+
@@ -687,77 +627,25 @@ function viewMa(){const now=new Date(),d=ymd(addDays(now,dayOff)),isToday=dayOff
     '<label class="field"><span>Mit szeretnél elvégezni?</span><input type="text" id="f-title" maxlength="120" placeholder="pl. ajánlat első fejezete" autocomplete="off"></label>'+
     '<div class="row chips modechips" role="group" aria-label="Mód" style="margin-bottom:10px">'+MK.map(k=>'<button data-act="fmode" data-k="'+k+'" style="--c:var(--'+k+')" aria-pressed="'+(formMode===k)+'">'+MODES[k]+'</button>').join("")+'</div>'+
     '<div class="row chips" role="group" aria-label="Időtartam" style="margin-bottom:12px">'+[25,50,100].map(m=>'<button data-act="fplan" data-m="'+m+'" aria-pressed="'+(formPlan===m)+'">'+fm(m)+'</button>').join("")+
-    '<input type="number" id="f-plan" min="5" max="600" step="5" inputmode="numeric" aria-label="Egyéni időtartam percben" placeholder="perc" value="'+([25,50,100].includes(formPlan)?"":formPlan)+'"></div>'+(simple?"":projField("f-proj",""))+
+    '<input type="number" id="f-plan" min="5" max="600" step="5" inputmode="numeric" aria-label="Egyéni időtartam percben" placeholder="perc" value="'+([25,50,100].includes(formPlan)?"":formPlan)+'"></div>'+
+    '<label class="field"><span class="small">Mikor? (nem kötelező)</span><input type="time" id="f-start" step="300"></label>'+(simple?"":projField("f-proj",""))+
     '<button class="btn" data-act="add">Feladat felvétele</button></div>'+
     (simple?'<p class="morelink"><button data-act="simpleoff">További funkciók bekapcsolása</button><br><span class="muted small">projektek, mély munka mód háttérhangokkal, részletes statisztika</span></p>':"");
   return h}
 
-function blkAttr(x,d){const n=new Date(),nm=n.getHours()*60+n.getMinutes(),now=d===today()&&x.s<=nm&&nm<x.e;
-  return{cls:now?" now":"",style:"min-height:"+Math.max(64,Math.round((x.e-x.s)/60*52))+"px;",badge:now?'<span class="nowb">Most</span>':"",
-    line:now?nowLine(x.s,x.e,nm):""}}
-/* The amber line at the current moment; data-s/-e let countdown() move it without a re-render. */
-function nowLine(s,e,nm){return '<div class="nowline" data-s="'+s+'" data-e="'+e+'" style="top:'+Math.round((nm-s)/Math.max(1,e-s)*100)+'%"><span>'+hm(nm)+'</span></div>'}
-function moreBtn(b){return '<button class="bmore" data-act="bopen" data-bid="'+b.id+'" aria-expanded="'+(bOpen===b.id)+'" aria-label="Sáv módosítása">⋯</button>'}
-function blockHtml(x,d,p){const b=x.b,ba=blkAttr(x,d);
-  if(b.kind==="edzes"){const wk=p.workout,tr=+S.settings.travel||0,dur=x.e-x.s;
-    let h='<div class="blk'+(x.conf?" conf":"")+ba.cls+'" style="--c:var(--edzes);'+ba.style+'">'+ba.line+'<div class="bh">'+gripHtml(d,b)+'<h3>'+esc(b.title)+ba.badge+'</h3><span class="bt">'+b.start+"–"+b.end+'</span>'+moreBtn(b)+'</div>'+
-      '<div style="margin-top:8px">'+workoutSeg(d,wk)+'</div>';
-    if(wk==="uszas")h+='<p class="cap">Úszás '+fm(dur)+', az út oda-vissza 2 × '+tr+' perc, az öltözés 2 × '+CHANGE+' perc, együtt '+fm(dur+2*tr+2*CHANGE)+'.</p>';
-    else if(wk==="torna")h+='<p class="cap">Torna itthon, '+fm(dur)+'.</p>';
-    else if(wk==="nincs")h+='<p class="cap">Ma pihenőnap, az edzés elmarad.</p>';
-    else h+='<p class="cap">Válaszd ki, mi lesz az edzés.</p>';
-    if(wk==="uszas"||wk==="torna")h+='<div class="row" style="margin-top:8px"><button class="btn sm" data-act="wdone" data-d="'+d+'">'+(p.workoutDone?"Megvolt – visszavonom":"Megvolt")+'</button></div>';
-    if(bOpen===b.id)h+=durRow(d,b)+moveRow(d,b);
-    if(x.conf)h+='<p class="cap bad">Időben ütközik egy másik sávval.</p>';
-    return h+'</div>'}
-  const ts=S.tasks.filter(t=>t.date===d&&t.blockId===b.id),dur=x.e-x.s,planned=ts.reduce((a,t)=>a+t.plan,0),isToday=d===today();
-  let h='<div class="blk'+(x.conf?" conf":"")+ba.cls+'" style="'+(b.mode?'--c:var(--'+b.mode+');':"")+ba.style+'">'+ba.line+'<div class="bh">'+gripHtml(d,b)+'<h3>'+esc(b.title)+ba.badge+'</h3><span class="bt">'+b.start+"–"+b.end+'</span>'+moreBtn(b)+'</div>'+
-    '<p class="cap'+(planned>dur?" over":"")+'">'+(b.mode?MODES[b.mode]+", ":"")+(planned>dur?"a feladatok "+fm(planned-dur)+"-cal hosszabbak a sávnál":(planned?fm(dur)+", ebből "+fm(planned)+" foglalt":fm(dur)+" szabad"))+'</p>';
-  if(bOpen===b.id)h+=durRow(d,b)+moveRow(d,b);
-  if(x.conf)h+='<p class="cap bad">Időben ütközik egy másik sávval.</p>';
-  if(ts.length)h+='<ul class="tasks">'+ts.map(t=>taskHtml(t,isToday)).join("")+'</ul>';
-  if(bOpen===b.id)h+='<div class="addrow"><input type="text" id="bt-'+b.id+'" maxlength="120" placeholder="Feladat ebbe a sávba" aria-label="Új feladat a sávba" autocomplete="off">'+
-    '<button class="btn sm" data-act="badd" data-d="'+d+'" data-bid="'+b.id+'">Hozzáad</button></div>';
-  return h+'</div>'}
-
-/* Day plan as a timeline: start times on the left axis, free gaps kept, and the amber line at the current moment. */
-function timelineHtml(d,p,items){const n=new Date(),nm=n.getHours()*60+n.getMinutes();let placed=d!==today(),prevEnd=null,h='<div class="tl">';
-  const row=(t,inner,cls)=>'<div class="tlrow'+(cls||"")+'"><div class="tlt">'+t+'</div><div class="tlc">'+inner+'</div></div>';
-  const nowRow=()=>row("",'<div class="nowstatic">'+nowLine(nm,nm+1,nm)+'</div>'," tlnow");
-  items.forEach(x=>{
-    if(!placed&&nm<x.s){h+=nowRow();placed=true}
-    else if(prevEnd!==null&&x.s>prevEnd)h+=row("",""," tlgap");
-    if(!placed&&x.type==="block"&&x.s<=nm&&nm<x.e)placed=true;
-    const inTravel=!placed&&x.type==="travel"&&x.s<=nm&&nm<x.e;
-    h+=row(hm(x.s),x.type==="travel"?'<div class="travel">'+hm(x.s)+"–"+hm(x.e)+" "+x.label+'</div>':blockHtml(x,d,p));
-    if(inTravel){h+=nowRow();placed=true}
-    prevEnd=Math.max(prevEnd||0,x.e)});
-  if(!placed&&items.length)h+=nowRow();
-  if(items.length)h+=row(hm(prevEnd),"", " tlend");
-  return h+'</div>'}
+/* Day plan: the day's own tasks, scheduled ones sorted by start time, then those still waiting for a time. */
 function viewNapirend(){const w=weekDates();if(!pDate||!w.includes(pDate))pDate=today();
-  const d=pDate,p=ensurePlan(d),isToday=d===today(),ty=dtype(d);
-  let h='<div class="head"><div><h1>Napirend</h1><p class="date">'+longDate(parseD(d))+', '+(ty==="wd"?"hétköznap":"hétvége")+'</p></div>'+
-    '<button class="btn ghost sm" data-act="pedit">'+(editPlan?"Kész":"Sávok szerkesztése")+'</button></div>';
+  const d=pDate,isToday=d===today();
+  let h='<div class="head"><div><h1>Napirend</h1><p class="date">'+longDate(parseD(d))+'</p></div></div>';
   if(flash){h+='<div class="alert" role="status">'+esc(flash)+'</div>';flash=""}
   h+='<div class="pills" role="group" aria-label="A hét napjai">'+w.map((dd,i)=>
     '<button data-act="pday" data-d="'+dd+'" class="'+(i>=5?"we ":"")+(dd===today()?"today":"")+'" aria-pressed="'+(dd===d)+'"><b>'+DAYS[i]+'</b><small>'+(+dd.slice(8))+'.</small></button>').join("")+'</div>';
-  if(!S.settings.simple)h+='<p class="muted small" style="margin-bottom:12px">Az első öt nap hétköznap, a két szürke hétvége. Mindkettőnek külön sablonja van a Beállításban.</p>';
   const by=dayPlanMins(d),sum=MK.reduce((a,k)=>a+by[k],0);
   if(sum)h+='<div class="strip" aria-hidden="true">'+MK.map(k=>by[k]?'<i style="width:'+(by[k]/sum*100)+'%;background:var(--'+k+')"></i>':"").join("")+'</div>'+
     '<div class="legend" style="margin-bottom:14px">'+MK.filter(k=>by[k]).map(k=>'<span><b style="background:var(--'+k+')"></b>'+MODES[k]+" "+fm(by[k])+'</span>').join("")+'</div>';
-  if(editPlan){
-    h+='<div class="panel">'+(p.blocks.length?blockRows(p.blocks,d):'<p class="muted">Ennek a napnak még nincs sávja.</p>')+addBlockBtns(d)+'</div>'+
-      '<div class="row" style="margin-top:12px"><button class="btn ghost sm" data-act="dayreset">'+(confirmDay?"Biztosan visszaállítom":"Visszaállítás a "+(ty==="wd"?"hétköznapi":"hétvégi")+" sablonra")+'</button></div>'+
-      '<p class="muted small" style="margin-top:6px">A visszaállítás a nap sávjait cseréli le, a feladatok megmaradnak, de sáv nélkül.</p>';
-    return h}
-  if(isToday)h+='<div class="row" style="margin-bottom:12px"><button class="btn ghost sm" data-act="replan">Hátralévő nap újratervezése</button></div>';
-  const items=dayItems(d);
-  if(!items.length)h+='<div class="slot">Nincs sáv. A „Sávok szerkesztése” gombbal vehetsz fel.</div>';
-  h+=timelineHtml(d,p,items);
-  const ids=p.blocks.map(b=>b.id),loose=S.tasks.filter(t=>t.date===d&&(!t.blockId||!ids.includes(t.blockId)));
-  if(loose.length)h+='<h2>Sávhoz nem rendelt feladatok</h2><ul class="tasks">'+loose.map(t=>taskHtml(t,isToday)).join("")+'</ul>'+
-    '<p class="muted small">Nyisd meg a feladatot, és válassz neki napirendi sávot.</p>';
+  const all=S.tasks.filter(t=>t.date===d),sch=all.filter(t=>t.start).sort((a,b)=>tm(a.start)-tm(b.start)),loose=all.filter(t=>!t.start);
+  h+='<h2>Beütemezve</h2>'+(sch.length?'<ul class="tasks">'+sch.map(t=>taskHtml(t,isToday)).join("")+'</ul>':'<div class="slot">Nincs időponthoz kötött feladatod erre a napra. Nyiss meg egyet alább, és adj neki időpontot.</div>');
+  h+='<h2>Időpont nélkül</h2>'+(loose.length?'<ul class="tasks">'+loose.map(t=>taskHtml(t,isToday)).join("")+'</ul>':'<p class="muted small">Minden mai feladatnak van időpontja.</p>');
   return h}
 
 /* ---------- pet ---------- */
@@ -898,22 +786,26 @@ function dayStory(){const d=today(),on=S.settings.pet.on,n=petName(),d0=parseD(d
   return out}
 /* ---------- today: hero card ---------- */
 /* The one thing that matters now: the current block, the task to start, a countdown and one big button. */
-function heroCand(d,cur){const open=S.tasks.filter(t=>t.date===d&&!t.completed);
-  return (cur&&open.find(t=>t.blockId===cur.b.id))||open.find(t=>t.proud)||open.find(t=>t.star)||open[0]||null}
-function heroHtml(){const d=today(),p=ensurePlan(d),items=dayItems(d).filter(x=>x.type==="block"&&!(x.b.kind==="edzes"&&p.workout==="nincs"));
-  const n=new Date(),nm=n.getHours()*60+n.getMinutes(),cur=items.find(x=>x.s<=nm&&nm<x.e),nxt=items.find(x=>x.s>nm),cand=heroCand(d,cur),c=S.settings.pet;
-  const lab=cur?"Most"+(cur.b.mode?" · "+MODES[cur.b.mode]:"")+" · "+hm(cur.s)+"–"+hm(cur.e):nxt?"Következő: "+hm(nxt.s)+" "+esc(nxt.b.title):"Ma";
-  const pct=cur?Math.round((nm-cur.s)/Math.max(1,cur.e-cur.s)*100):0;
+function heroCand(d){const open=S.tasks.filter(t=>t.date===d&&!t.completed),n=new Date(),nm=n.getHours()*60+n.getMinutes();
+  const cur=open.find(t=>t.start&&tm(t.start)<=nm&&nm<tm(t.start)+t.plan);
+  return cur||open.find(t=>t.proud)||open.find(t=>t.star)||open[0]||null}
+function heroHtml(){const d=today(),n=new Date(),nm=n.getHours()*60+n.getMinutes(),c=S.settings.pet;
+  const today_=S.tasks.filter(t=>t.date===d&&t.start).sort((a,b)=>tm(a.start)-tm(b.start));
+  const cur=today_.find(t=>tm(t.start)<=nm&&nm<tm(t.start)+t.plan),nxt=today_.find(t=>tm(t.start)>nm),cand=heroCand(d);
+  const lab=cur?"Most · "+MODES[cur.mode]+" · "+cur.start+"–"+hm(tm(cur.start)+cur.plan):nxt?"Következő: "+nxt.start+" "+esc(nxt.title):"Ma";
+  const pct=cur?Math.round((nm-tm(cur.start))/Math.max(1,cur.plan)*100):0;
   let say="";if(c.on){const mood=petMood(),t=S.timer;say=S.petNote&&Date.now()-S.petNote.at<30*60000?S.petNote.text:dayPick(PET_MOOD[mood],"m"+mood).replace("{n}",petName())}
   return '<div class="hero'+(c.on?" withpet":"")+'"><p class="hlab">'+lab+'</p>'+
-    '<h2 class="htitle">'+esc(cand?cand.title:(cur?cur.b.title:"Szabad időd van"))+'</h2>'+
+    '<h2 class="htitle">'+esc(cand?cand.title:"Szabad időd van")+'</h2>'+
     (cand?'<p class="hmeta">'+MODES[cand.mode]+(cand.project?" · "+esc(cand.project):"")+" · terv: "+fm(cand.plan)+(cand.done?", eddig "+fm(cand.done):"")+'</p>':"")+
-    (cur?'<div class="htime" id="cd-now">–</div><div class="hbar"><i style="width:'+pct+'%"></i></div><p class="hmeta">van még hátra a sávból</p>':"")+
+    (cur?'<div class="htime" id="cd-now">–</div><div class="hbar"><i style="width:'+pct+'%"></i></div><p class="hmeta">van még hátra a feladatból</p>':"")+
     (c.on?'<button class="pet-btn hpet" data-act="petpoke" aria-label="Simogasd meg: '+esc(petName())+'">'+petSvg(c.species,petMood(),petLevel(S.petMins||0))+'</button>'+(say?'<p class="hsay">'+esc(say)+'</p>':""):"")+
     (cand?'<button class="hgo" data-act="start" data-id="'+cand.id+'"><span aria-hidden="true">▶</span> Fókusz indítása</button>':'<button class="hgo" data-act="focusadd">+ Vegyél fel egy feladatot</button>')+
     '<p class="hlink"><button data-act="gonap">Teljes napirend ›</button></p></div>'}
-function workoutHtml(){const d=today(),p=ensurePlan(d),wb=p.blocks.find(b=>b.kind==="edzes");if(!wb)return"";
-  return '<div class="panel" style="margin-bottom:14px"><p style="margin-bottom:8px"><b>Edzés ma</b> <span class="muted small">'+wb.start+"–"+wb.end+(p.workoutDone?", megvolt":"")+'</span></p>'+workoutSeg(d,p.workout)+'</div>'}
+/* The workout choice is day-level, independent of any scheduled task; if one is scheduled for today, its time is shown alongside for continuity. */
+function workoutHtml(){const d=today(),p=ensurePlan(d),et=S.tasks.find(t=>t.date===d&&t.mode==="edzes"&&t.start);
+  return '<div class="panel" style="margin-bottom:14px"><p style="margin-bottom:8px"><b>Edzés ma</b>'+(et?' <span class="muted small">'+et.start+"–"+hm(tm(et.start)+et.plan)+'</span>':"")+(p.workoutDone?' <span class="muted small">, megvolt</span>':"")+'</p>'+workoutSeg(d,p.workout)+
+    (p.workout==="uszas"||p.workout==="torna"?'<div class="row" style="margin-top:8px"><button class="btn sm" data-act="wdone" data-d="'+d+'">'+(p.workoutDone?"Megvolt – visszavonom":"Megvolt")+'</button></div>':"")+'</div>'}
 function oneThingHtml(){const m=S.morning[today()];if(!m||!m.text)return"";const t=find(m.taskId),ok=t&&t.completed;
   return '<div class="panel onething"><span class="ost" aria-hidden="true">★</span><div><p class="small muted">A mai egy dolog</p><p><b>'+esc(m.text)+'</b>'+(ok?' <span class="okk">kész!</span>':"")+'</p></div></div>'}
 /* ---------- morning ---------- */
@@ -960,7 +852,7 @@ function logoSvg(cls){return '<svg class="'+(cls||"logo")+'" viewBox="0 0 100 10
 /* A short guided start: welcome, choose a pet, four pages on how the app works, then the first step.
    The chosen pet appears on every page and gets a little happier from page to page. */
 const INTRO_PAGES=[
-  ["Tervezd meg a napot","A Napirendben sávokra osztod a napot: munka, tanulás, pihenés, edzés. A sávok hossza gombnyomással állítható, és ha a nap elcsúszik, a „Hátralévő nap újratervezése” rendet tesz.",1],
+  ["Tervezd meg a napot","Minden feladatnak te adsz időpontot és időtartamot a Napirendben, amikor csak akarod. Ha két feladat időben ütközik, szólunk, de a döntés a tiéd. A be nem fejezett feladatok másnap automatikusan új időpontra várnak.",1],
   ["Fókuszáljon, szándékkal","A feladat melletti ▶ gombbal indul egy fókuszblokk. Előbb leírod, mit fogsz csinálni, és mikor lesz kész. Ha közbejön valami, szüneteltethetsz, vagy egy sorban feljegyezheted, és a gondolat nem vész el.",2],
   ["{n} együtt fejlődik veled","Minden fókuszperccel egy kicsit vidámabb és ügyesebb lesz: új kinézetet kap és trükköket tanul. Semmit nem veszít el soha, legfeljebb álmos, ha aznap még nem dolgoztatok együtt.",3],
   ["Önismeret, kedvesen","Naponta egy apró, néhány perces gyakorlat: egy érzés megnevezése, egy jó szó valakinek, egy perc légzés a társaddal. Így nem csak hatékonyabb leszel, az érzelmi intelligenciád is fejlődik. Mindig kihagyható.",3],
@@ -1220,23 +1112,29 @@ function bestPart(){const st=sessStats(),a=st.byDay.filter(x=>x.rated>=3).sort((
   if(a.length>=2&&a[0].rate-a[1].rate>=.15)return a[0].k;
   const hb={reggel:0,delutan:0,este:0};Object.keys(S.hourLog).forEach(d=>Object.keys(S.hourLog[d]).forEach(h=>{const x=+h;hb[x>=5&&x<=11?"reggel":x>=12&&x<=16?"delutan":"este"]+=S.hourLog[d][h]}));
   const k=Object.keys(hb).sort((x,y)=>hb[y]-hb[x])[0];return hb[k]>=60?k:""}
-/* Up to two open tasks of today without a block, the one thing and starred first, placed in upcoming blocks with room, best part of day first. */
-function suggestDeep(){const d=today(),p=ensurePlan(d),n=new Date(),nm=n.getHours()*60+n.getMinutes(),bp=bestPart();
+/* Free windows left today between already-scheduled tasks, from now (or 7:00) to 22:00. */
+function freeWindows(d,nm){const DAYSTART=7*60,DAYEND=22*60,start=Math.max(nm,DAYSTART);
+  const busy=S.tasks.filter(t=>t.date===d&&t.start).map(t=>[tm(t.start),tm(t.start)+t.plan]).sort((a,b)=>a[0]-b[0]);
+  const out=[];let cur=start;
+  busy.forEach(([s,e])=>{if(e<=cur)return;if(s>cur)out.push([cur,Math.min(s,DAYEND)]);cur=Math.max(cur,e)});
+  if(cur<DAYEND)out.push([cur,DAYEND]);
+  return out.filter(([s,e])=>e-s>0)}
+/* Up to two open, unscheduled tasks of today (the one thing and starred first), each given a start time in a free window, best part of day first. */
+function suggestDeep(){const d=today(),n=new Date(),nm=n.getHours()*60+n.getMinutes(),bp=bestPart();
   const part=m=>{const h=Math.floor(m/60);return h>=5&&h<=11?"reggel":h>=12&&h<=16?"delutan":"este"};
-  const free={};p.blocks.forEach(b=>{if(b.kind==="edzes"||b.mode==="pihenes")return;const s0=Math.max(nm,tm(b.start)),len=tm(b.end)-s0;
-    if(len>0)free[b.id]=len-S.tasks.filter(t=>t.date===d&&t.blockId===b.id&&!t.completed).reduce((a,t)=>a+Math.max(0,t.plan-(t.done||0)),0)});
-  const ids=p.blocks.map(b=>b.id),open=S.tasks.filter(t=>t.date===d&&!t.completed&&(!t.blockId||!ids.includes(t.blockId))&&t.plan-(t.done||0)>=25)
+  const open=S.tasks.filter(t=>t.date===d&&!t.completed&&!t.start&&t.plan-(t.done||0)>=25)
     .sort((a,b)=>(b.proud?2:0)+(b.star?1:0)-((a.proud?2:0)+(a.star?1:0))||b.plan-a.plan).slice(0,2);
-  const blocks=p.blocks.filter(b=>free[b.id]>0).sort((a,b)=>(part(tm(b.start))===bp)-(part(tm(a.start))===bp)||tm(a.start)-tm(b.start));
+  const wins=freeWindows(d,nm).sort((a,b)=>((part(b[0])===bp)-(part(a[0])===bp))||a[0]-b[0]);
   const out=[];open.forEach(t=>{const need=Math.min(t.plan-(t.done||0),+S.settings.focus||50);
-    const g=blocks.find(b=>free[b.id]>=need&&(b.mode===t.mode||!b.mode))||blocks.find(b=>free[b.id]>=need);
-    if(g){free[g.id]-=need;out.push({t,b:g,best:bp&&part(tm(g.start))===bp})}});
+    const wi=wins.findIndex(([s,e])=>e-s>=need);if(wi<0)return;
+    const[s,e]=wins[wi],st=hm(s);out.push({t,start:st,best:bp&&part(s)===bp});
+    if(e-s-need>0)wins[wi]=[s+need,e];else wins.splice(wi,1)});
   return{out,bp}}
 function suggestHtml(){const d=today();if(S.sug[d]||new Date().getHours()>=15)return"";const r=suggestDeep();if(!r.out.length)return"";
   const lab={reggel:"délelőtt",delutan:"délután",este:"este"};
   return '<div class="panel" style="margin-bottom:14px"><h3>Javaslat a mai mély munkára</h3>'+
-    (r.bp?'<p class="small muted" style="margin:4px 0 8px">Az eddigi adataid szerint '+lab[r.bp]+' megy a legjobban a fókusz.</p>':'<p class="small muted" style="margin:4px 0 8px">A legkorábbi szabad, illő sávokat ajánljuk.</p>')+
-    '<ul class="small" style="margin:0 0 10px 18px">'+r.out.map(x=>'<li><b>'+esc(x.t.title)+'</b> → '+x.b.start+'–'+x.b.end+' '+esc(x.b.title)+(x.best?' <span class="muted">(a legjobb napszakodban)</span>':'')+'</li>').join("")+'</ul>'+
+    (r.bp?'<p class="small muted" style="margin:4px 0 8px">Az eddigi adataid szerint '+lab[r.bp]+' megy a legjobban a fókusz.</p>':'<p class="small muted" style="margin:4px 0 8px">A legkorábbi szabad időpontot ajánljuk.</p>')+
+    '<ul class="small" style="margin:0 0 10px 18px">'+r.out.map(x=>'<li><b>'+esc(x.t.title)+'</b> → '+x.start+(x.best?' <span class="muted">(a legjobb napszakodban)</span>':'')+'</li>').join("")+'</ul>'+
     '<div class="row"><button class="btn sm" data-act="sugok">Beosztom</button><button class="btn ghost sm" data-act="sugno">Most nem</button></div></div>'}
 /* ---------- week review and month ---------- */
 /* Three questions for the week, kept per Monday; last week's "what will you change" is shown as a reminder. */
@@ -1373,15 +1271,12 @@ function viewBeall(){const s=S.settings,T=s.targets;
       '<input type="number" min="0" max="100" step="0.5" inputmode="decimal" aria-label="'+MODES[k]+', hétköznap, óra" data-set="target" data-k="'+k+'" data-t="wd" value="'+T[k].wd+'">'+
       '<input type="number" min="0" max="100" step="0.5" inputmode="decimal" aria-label="'+MODES[k]+', hétvége, óra" data-set="target" data-k="'+k+'" data-t="we" value="'+T[k].we+'"></div>').join("")+
     '<p class="muted small">Hétköznap összesen '+sw.toLocaleString("hu-HU")+' óra, hétvégén '+se.toLocaleString("hu-HU")+' óra. A hétköznapi órák öt napra, a hétvégiek két napra oszlanak.</p></div>';
-  h+='</details>'+sec("sablon","Napirend-sablonok")+'<h3 class="sub">Hétköznap</h3><div class="panel">'+blockRows(s.templates.wd,"wd")+addBlockBtns("wd")+'</div>';
-  h+='<h3 class="sub">Hétvége</h3><div class="panel">'+blockRows(s.templates.we,"we")+addBlockBtns("we")+
-    '<p class="muted small" style="margin-top:8px">A sablon az újonnan megnyitott napokra érvényes. Egy konkrét nap sávjait a Napirend nézetben módosíthatod.</p></div>';
-  h+='</details>'+sec("fokusz","Fókusz, edzés és jelzések")+'<div class="panel"><div class="grid2"><label class="field"><span>Út az uszodába (perc, egy irány)</span><input type="number" min="0" max="120" step="5" inputmode="numeric" data-set="travel" value="'+s.travel+'"></label><span></span>'+
+  h+='</details>'+sec("fokusz","Fókusz és jelzések")+'<div class="panel"><div class="grid2">'+
     '<div class="row chips" role="group" aria-label="Fókusz-ritmus" style="margin-bottom:12px">'+[[25,5,"Gyors: 25/5"],[50,10,"Mély: 50/10"]].map(p=>'<button data-act="preset" data-f="'+p[0]+'" data-b="'+p[1]+'" aria-pressed="'+(s.focus===p[0]&&s.brk===p[1])+'">'+p[2]+'</button>').join("")+'</div>'+
     '<label class="field"><span>Fókuszblokk (perc)</span><input type="number" min="5" max="180" step="5" inputmode="numeric" data-set="focus" value="'+s.focus+'"></label>'+
     '<label class="field"><span>Szünet (perc)</span><input type="number" min="1" max="60" inputmode="numeric" data-set="brk" value="'+s.brk+'"></label></div>'+
     '<p class="muted small">A blokk végén hangjelzés szól, ha az alkalmazás nyitva van.</p></div>';
-  h+='<h3 class="sub">Jelzések</h3><div class="panel"><p style="margin-bottom:10px">'+(S.settings.alerts?"Hang és értesítés jelzi, amikor egy napirendi sáv elkezdődik vagy véget ér, és amikor a fókuszidő lejár.":"Most nem szól. Ha bekapcsolod, hang és értesítés jelzi a napirendi sávok kezdését és végét.")+'</p>'+
+  h+='<h3 class="sub">Jelzések</h3><div class="panel"><p style="margin-bottom:10px">'+(S.settings.alerts?"Hang és értesítés jelzi, amikor egy beütemezett feladat elkezdődik vagy letelik az ideje, és amikor a fókuszidő lejár.":"Most nem szól. Ha bekapcsolod, hang és értesítés jelzi egy beütemezett feladat kezdését és a letelt időt.")+'</p>'+
     '<button class="btn'+(S.settings.alerts?"":" ghost")+'" data-act="alerts">'+(S.settings.alerts?"Kikapcsolás":"Bekapcsolás")+'</button>'+
     (S.settings.alerts&&"Notification"in window&&Notification.permission==="denied"?'<p class="muted small" style="margin-top:8px">A böngésző nem engedi az értesítést, ezért csak a hang szól.</p>':"")+'</div>';
   const pc=S.settings.pet;
@@ -1425,29 +1320,34 @@ function undoWorkout(d,p){if(p.workoutDone){uncredit("edzes",p.workoutCredit||0,
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;
   const a=b.dataset.act,t=b.dataset.id?find(b.dataset.id):null;
   if(a!=="reset")confirmReset=false;
-  if(a!=="dayreset")confirmDay=false;
   switch(a){
-    case "tab":view=b.dataset.v;openId=null;editPlan=false;window.scrollTo(0,0);break;
-    case "gonap":view="nap";pDate=today();openId=null;editPlan=false;window.scrollTo(0,0);break;
+    case "tab":view=b.dataset.v;openId=null;window.scrollTo(0,0);break;
+    case "gonap":view="nap";pDate=today();openId=null;window.scrollTo(0,0);break;
     case "day":dayOff=+b.dataset.o;openId=null;break;
     case "open":openId=openId===b.dataset.id?null:b.dataset.id;break;
     case "edit":editId=t.id;editMode=t.mode;break;
     case "ecancel":editId=null;break;
     case "emode":{editMode=b.dataset.k;document.querySelectorAll('[data-act="emode"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===editMode));return}
-    case "esave":{if(!t)return;const ti=document.getElementById("e-title"),pi=document.getElementById("e-plan"),title=ti.value.trim();
+    case "esave":{if(!t)return;const ti=document.getElementById("e-title"),pi=document.getElementById("e-plan"),di=document.getElementById("e-date"),si=document.getElementById("e-start"),title=ti.value.trim();
       if(!title){ti.focus();return}
       t.title=title;t.mode=editMode;t.plan=Math.min(600,Math.max(5,Math.round(+pi.value||t.plan)));
+      if(di&&di.value)t.date=di.value;
+      t.start=(si&&si.value)?si.value:null;
       const pj=document.getElementById("e-proj");t.project=pj?pj.value.trim().slice(0,40):(t.project||"");
       if(t.mode==="munka")t.star=false;
+      if(t.start){const m=overlapFlash(overlaps(t.date,t.start,t.plan,t.id));if(m)flash=m}
       editId=null;save();break}
     case "fmode":{formMode=b.dataset.k;document.querySelectorAll('[data-act="fmode"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===formMode));return}
     case "fplan":{formPlan=+b.dataset.m;const i=document.getElementById("f-plan");if(i)i.value="";
       document.querySelectorAll('[data-act="fplan"]').forEach(x=>x.setAttribute("aria-pressed",+x.dataset.m===formPlan));return}
-    case "add":{const ti=document.getElementById("f-title"),pi=document.getElementById("f-plan"),title=ti.value.trim();
+    case "add":{const ti=document.getElementById("f-title"),pi=document.getElementById("f-plan"),si=document.getElementById("f-start"),title=ti.value.trim();
       if(!title){ti.focus();return}
       const plan=Math.min(600,Math.max(5,Math.round(+pi.value||formPlan||50)));
       const pj=document.getElementById("f-proj"),project=pj?pj.value.trim().slice(0,40):"";
-      S.tasks.push({id:uid(),date:ymd(addDays(new Date(),dayOff)),title,mode:formMode,plan,done:0,star:false,completed:false,postponed:0,blockId:null,project});save();break}
+      const date=ymd(addDays(new Date(),dayOff)),start=(si&&si.value)?si.value:null,id=uid();
+      S.tasks.push({id,date,title,mode:formMode,plan,done:0,star:false,completed:false,postponed:0,start,project});
+      if(start){const m=overlapFlash(overlaps(date,start,plan,id));if(m)flash=m}
+      save();break}
     case "done":if(!t)return;
       if(!t.completed){t.completed=true;const diff=t.plan-(t.done||0);
         if(diff>0){credit(t,diff);t.auto={min:diff,date:today()}}
@@ -1486,12 +1386,11 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "petpoke":petTrick("hearts");return;
     case "prename":petRename=true;break;
     case "petmore":petMore=!petMore;break;
-    case "bopen":bOpen=bOpen===b.dataset.bid?null:b.dataset.bid;break;
     case "eqopen":eqOpen=true;break;
     case "simple":S.settings.simple=!S.settings.simple;save();break;
     case "simpleoff":S.settings.simple=false;flash="Bekapcsoltuk a további funkciókat. Az Egyszerű módot a Beállításokban bármikor visszakapcsolhatod.";save();break;
     case "focusadd":render();{const i=document.getElementById("f-title");if(i){i.scrollIntoView({block:"center"});i.focus()}}return;
-    case "sugok":{const r=suggestDeep();r.out.forEach(x=>{x.t.blockId=x.b.id});S.sug[today()]="ok";flash=r.out.length+" feladat bekerült a napirendbe.";save();break}
+    case "sugok":{const r=suggestDeep();r.out.forEach(x=>{x.t.start=x.start});S.sug[today()]="ok";flash=r.out.length+" feladat kapott időpontot a mai napra.";save();break}
     case "sugno":S.sug[today()]="skip";save();break;
     case "wsave":{const k=weekDates()[0],g=id=>{const e=document.getElementById(id);return e?e.value.trim():""};
       S.weekly[k]={good:g("w-good").slice(0,600),block:g("w-block").slice(0,600),change:g("w-change").slice(0,160),saved:Date.now()};flash="Elmentettük a heti visszatekintést.";save();break}
@@ -1500,14 +1399,14 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "introNoPet":introSaveName();S.settings.pet.on=!S.settings.pet.on;save();break;
     case "introdone":{introSaveName();const i=document.getElementById("intro-one"),v=b.dataset.one&&i?i.value.trim().slice(0,120):"";
       if(S.settings.pet.on&&!S.settings.pet.name)S.settings.pet.name=PETS[S.settings.pet.species].def;
-      if(v){const d=today(),id=uid();S.tasks.push({id,date:d,title:v,mode:"munka",plan:+S.settings.focus||50,done:0,star:false,completed:false,postponed:0,blockId:null,proud:true});S.morning[d]={text:v,taskId:id}}
+      if(v){const d=today(),id=uid();S.tasks.push({id,date:d,title:v,mode:"munka",plan:+S.settings.focus||50,done:0,star:false,completed:false,postponed:0,proud:true});S.morning[d]={text:v,taskId:id}}
       S.onboarded=true;introStep=0;view="ma";save();window.scrollTo(0,0);break}
     case "introAgain":S.onboarded=false;introStep=0;save();window.scrollTo(0,0);break;
     case "pname":{const i=document.getElementById("pet-name"),v=i?i.value.trim().slice(0,20):"";S.settings.pet.name=v||PETS[S.settings.pet.species].def;petRename=false;
       flash="Üdvözöld "+S.settings.pet.name+" nevű új társadat!";save();render();setTimeout(()=>petTrick("hearts"),400);return}
     case "mosave":{const i=document.getElementById("mo-text"),v=i?i.value.trim().slice(0,120):"",d=today();if(!v){if(i)i.focus();return}
       const full=S.tasks.filter(x=>x.date===d&&x.star&&x.mode!=="munka").length>=3,id=uid();
-      S.tasks.push({id,date:d,title:v,mode:formMode,plan:+S.settings.focus||50,done:0,star:formMode!=="munka"&&!full,completed:false,postponed:0,blockId:null,proud:true});
+      S.tasks.push({id,date:d,title:v,mode:formMode,plan:+S.settings.focus||50,done:0,star:formMode!=="munka"&&!full,completed:false,postponed:0,proud:true});
       S.morning[d]={text:v,taskId:id};save();render();setTimeout(()=>petTrick("hearts"),400);return}
     case "moskip":S.morning[today()]={skip:true};save();break;
     case "deepon":deep=true;ensureAudio();try{const r=document.documentElement;r.requestFullscreen&&r.requestFullscreen().catch(()=>{})}catch(e){}break;
@@ -1520,7 +1419,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
     case "capsave":{const n=document.getElementById("c-note"),ty=document.getElementById("c-type"),note=n?n.value.trim().slice(0,200):"";
       if(!S.timer||!note){if(n)n.focus();return}
       const base=find(S.timer.taskId),dis={type:ty?ty.value:"belso",note,at:Date.now()};
-      if(b.dataset.todo){const nt={id:uid(),date:today(),title:note,mode:base?base.mode:"munka",plan:25,done:0,star:false,completed:false,postponed:0,blockId:null};
+      if(b.dataset.todo){const nt={id:uid(),date:today(),title:note,mode:base?base.mode:"munka",plan:25,done:0,star:false,completed:false,postponed:0};
         S.tasks.push(nt);dis.taskId=nt.id;flash="Mára felvettük teendőnek: „"+note+"”."}
       S.timer.distractions=S.timer.distractions||[];S.timer.distractions.push(dis);save();break}
     case "stop":stopTimer();return;
@@ -1530,44 +1429,28 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
       if(!t.star&&S.tasks.filter(x=>x.date===t.date&&x.star&&x.mode!=="munka").length>=3){flash="Már három feladatot kiemeltél. Előbb vegyél ki egyet – a három éppen attól ér valamit, hogy csak három.";break}
       t.star=!t.star;save();break;
     case "postpone":if(!t)return;if(S.timer&&S.timer.taskId===t.id)stopTimer(true);
-      t.date=ymd(addDays(new Date(),1));t.postponed=(t.postponed||0)+1;t.star=false;t.blockId=null;openId=null;
+      t.date=ymd(addDays(new Date(),1));t.postponed=(t.postponed||0)+1;t.star=false;t.start=null;openId=null;
       if(t.postponed>=3)flash="„"+t.title+"” már "+t.postponed+" alkalommal került át másnapra. Érdemes dönteni róla.";save();break;
+    case "split":{if(!t)return;const sid=t.splitId||(t.splitId=uid());
+      const nt={id:uid(),date:t.date,title:t.title,mode:t.mode,project:t.project,plan:t.plan,done:0,star:false,completed:false,postponed:0,start:null,splitId:sid};
+      S.tasks.push(nt);editId=nt.id;editMode=nt.mode;openId=nt.id;save();break}
     case "del":if(!t)return;if(S.timer&&S.timer.taskId===t.id)stopTimer(true);S.tasks=S.tasks.filter(x=>x!==t);openId=null;save();break;
-    case "carry":{const d=today();stale().forEach(x=>{x.date=d;x.postponed=(x.postponed||0)+1;x.star=false;x.blockId=null});save();break}
-    case "drop":{const st=stale();S.tasks=S.tasks.filter(x=>!st.includes(x));save();break}
-    case "pday":pDate=b.dataset.d;openId=null;editPlan=false;confirmDay=false;break;
-    case "pedit":editPlan=!editPlan;break;
+    case "pday":pDate=b.dataset.d;openId=null;break;
     case "preset":S.settings.focus=+b.dataset.f;S.settings.brk=+b.dataset.b;save();break;
     case "alerts":S.settings.alerts=!S.settings.alerts;if(S.settings.alerts){ensureAudio();askNotify();alertStamp=Date.now()}save();break;
     case "wset":setWorkout(b.dataset.d,b.dataset.v);save();break;
     case "wdone":{const d=b.dataset.d,p=ensurePlan(d);
       if(p.workoutDone)undoWorkout(d,p);
-      else if(p.workout==="uszas"||p.workout==="torna"){const m=workoutMins(p);
+      else if(p.workout==="uszas"||p.workout==="torna"){const m=workoutMins(d,p);
         S.log[d]=S.log[d]||{};S.log[d].edzes=(S.log[d].edzes||0)+m;p.workoutDone=true;p.workoutCredit=m}
       save();break}
-    case "badd":{const d=b.dataset.d,p=ensurePlan(d),bl=p.blocks.find(x=>x.id===b.dataset.bid),inp=document.getElementById("bt-"+b.dataset.bid);
-      if(!bl||!inp)return;const title=inp.value.trim();if(!title){inp.focus();return}
-      const dur=Math.max(0,tm(bl.end)-tm(bl.start)),planned=S.tasks.filter(x=>x.date===d&&x.blockId===bl.id).reduce((s,x)=>s+x.plan,0),rem=dur-planned;
-      const plan=rem>=15?Math.min(rem,+S.settings.focus||50):25;
-      S.tasks.push({id:uid(),date:d,title,mode:(bl.mode&&bl.mode!=="edzes")?bl.mode:"munka",plan,done:0,star:false,completed:false,postponed:0,blockId:bl.id});save();break}
-    case "baddblock":{const sc=b.dataset.s,bl=getBlocks(sc),kind=b.dataset.k==="edzes";
-      const last=bl.length?tm(bl[bl.length-1].end):9*60,st=Math.min(last,22*60);
-      bl.push(kind?blk(hm(st),hm(st+60),"Edzés","edzes","edzes"):blk(hm(st),hm(st+60),"Új sáv",""));sortBlocks(bl);save();break}
-    case "bdur":{const m=resizeBlock(b.dataset.d,b.dataset.bid,+b.dataset.m);if(m)flash=m;save();break}
-    case "replan":flash=replanToday();save();break;
-    case "bmove":moveBlock(b.dataset.d,b.dataset.bid,+b.dataset.m);save();break;
-    case "bdel":{const sc=b.dataset.s,bl=getBlocks(sc),i=bl.findIndex(x=>x.id===b.dataset.bid);
-      if(i>=0){bl.splice(i,1);S.tasks.forEach(x=>{if(x.blockId===b.dataset.bid)x.blockId=null});save()}break}
-    case "dayreset":if(!confirmDay){confirmDay=true;break}
-      {const d=pDate,old=S.plan[d];if(old)undoWorkout(d,old);
-       S.tasks.forEach(x=>{if(x.date===d)x.blockId=null});delete S.plan[d];ensurePlan(d);confirmDay=false;save();break}
     case "review":{const d=today(),r=S.reviews[d]||{};
       r.good=document.getElementById("r-good").value.trim();r.slip=document.getElementById("r-slip").value.trim();
       const first=document.getElementById("r-first").value.trim();const tmw=ymd(addDays(new Date(),1));
       if(first){const ex=r.taskId&&find(r.taskId);
         if(ex){ex.title=first;ex.mode=formMode}
         else{const id=uid();const full=S.tasks.filter(x=>x.date===tmw&&x.star).length>=3;
-          S.tasks.push({id,date:tmw,title:first,mode:formMode,plan:+S.settings.focus||50,done:0,star:!full,completed:false,postponed:0,blockId:null});r.taskId=id}}
+          S.tasks.push({id,date:tmw,title:first,mode:formMode,plan:+S.settings.focus||50,done:0,star:!full,completed:false,postponed:0});r.taskId=id}}
       const rq=document.getElementById("r-eq");if(rq){r.eq=rq.value.trim().slice(0,600);r.eqq=dayPick(EQ_EVE,"e")}
       r.first=first;S.reviews[d]=r;flash="Elmentettük a visszatekintést."+(first?" A holnapi első feladat bekerült a holnapi listába.":"");save();break}
     case "export":exportData();return;
@@ -1577,21 +1460,6 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
       S=defaults();S.updatedAt=Date.now();confirmReset=false;save();view="ma";break;
   }
   render()});
-/* Drag by the grip. The label shows the new time while the pointer moves; the move is saved on release. */
-document.addEventListener("pointerdown",e=>{const g=e.target.closest&&e.target.closest("[data-grip]");if(!g||e.button>0)return;
-  e.preventDefault();g.setPointerCapture(e.pointerId);const el=g.closest(".blk"),lab=el.querySelector(".bt");
-  drag={pid:e.pointerId,y0:e.clientY,delta:0,d:g.dataset.d,bid:g.dataset.bid,el,lab,orig:lab.textContent};el.classList.add("dragging")});
-document.addEventListener("pointermove",e=>{if(!drag||e.pointerId!==drag.pid)return;
-  const delta=Math.round((e.clientY-drag.y0)/DRAG_PX/5)*5;if(delta===drag.delta)return;drag.delta=delta;
-  const b=ensurePlan(drag.d).blocks.find(x=>x.id===drag.bid);if(!b)return;
-  const[s,en]=blockSpan(drag.d,b,delta);drag.lab.textContent=hm(s)+"–"+hm(en);
-  drag.el.style.transform="translateY("+(s-tm(b.start))*DRAG_PX+"px)"});
-function endDrag(e,commit){if(!drag||e.pointerId!==drag.pid)return;const x=drag;drag=null;
-  x.el.classList.remove("dragging");x.el.style.transform="";
-  if(commit&&x.delta){moveBlock(x.d,x.bid,x.delta);save()}
-  render()}
-document.addEventListener("pointerup",e=>endDrag(e,true));
-document.addEventListener("pointercancel",e=>endDrag(e,false));
 /* Saves all data as a JSON file. Inside the Claude viewer the save goes through the downloads capability
    (the viewer confirms it); on a plain web page a normal download link is used. */
 async function exportData(){const name="horarium-"+today()+".json",json=JSON.stringify(S,null,1);
@@ -1610,26 +1478,13 @@ function readImport(file){const r=new FileReader();
   r.readAsText(file)}
 document.addEventListener("change",e=>{const i=e.target,ds=i.dataset||{};
   if(i.id==="imp-file"){if(i.files&&i.files[0])readImport(i.files[0]);return}
-  if(!ds.set&&!ds.assign&&!ds.bf)return;
+  if(!ds.set)return;
   if(ds.set==="petname"){S.settings.pet.name=i.value.trim().slice(0,20);save();render();return}
-  if(ds.set){const v=+String(i.value).replace(",",".");
-    if(ds.set==="target"){const T=S.settings.targets[ds.k];if(T)T[ds.t]=Math.min(100,Math.max(0,isFinite(v)?v:0))}
-    if(ds.set==="focus")S.settings.focus=Math.min(180,Math.max(5,Math.round(v)||50));
-    if(ds.set==="brk")S.settings.brk=Math.min(60,Math.max(1,Math.round(v)||10));
-    if(ds.set==="travel")S.settings.travel=Math.min(120,Math.max(0,isFinite(v)?Math.round(v):20));
-    save()}
-  else if(ds.assign){const t=find(ds.assign);if(t){t.blockId=i.value||null;save()}}
-  else if(ds.bf){const bl=getBlocks(ds.bs),b=bl.find(x=>x.id===ds.bid);
-    if(b){const f=ds.bf;
-      if(f==="title")b.title=i.value.trim()||"Sáv";
-      else if(f==="mode")b.mode=i.value;
-      else{b[f]=i.value;
-        if(!/^\d\d:\d\d$/.test(b.start))b.start="09:00";
-        if(!/^\d\d:\d\d$/.test(b.end))b.end=hm(tm(b.start)+60);
-        if(tm(b.end)<=tm(b.start))b.end=hm(Math.min(1439,tm(b.start)+60));
-        sortBlocks(bl)}
-      save()}}
-  render()});
+  const v=+String(i.value).replace(",",".");
+  if(ds.set==="target"){const T=S.settings.targets[ds.k];if(T)T[ds.t]=Math.min(100,Math.max(0,isFinite(v)?v:0))}
+  if(ds.set==="focus")S.settings.focus=Math.min(180,Math.max(5,Math.round(v)||50));
+  if(ds.set==="brk")S.settings.brk=Math.min(60,Math.max(1,Math.round(v)||10));
+  save();render()});
 /* Remembers which settings groups are open across re-renders. */
 document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.dataset&&d.dataset.sec){if(d.open)openSecs.add(d.dataset.sec);else openSecs.delete(d.dataset.sec)}},true);
 document.addEventListener("input",e=>{if(e.target.id==="s-min"&&e.target.value){startDur=Math.min(180,Math.max(5,+e.target.value||0));
@@ -1637,8 +1492,7 @@ document.addEventListener("input",e=>{if(e.target.id==="s-min"&&e.target.value){
 document.addEventListener("input",e=>{if(e.target.id==="f-plan"&&e.target.value){formPlan=+e.target.value||50;
   document.querySelectorAll('[data-act="fplan"]').forEach(x=>x.setAttribute("aria-pressed","false"))}});
 document.addEventListener("keydown",e=>{if(e.key!=="Enter")return;const id=e.target.id||"";
-  if(id==="f-title"){const b=document.querySelector('[data-act="add"]');if(b)b.click()}
-  else if(id.indexOf("bt-")===0){const b=e.target.parentNode.querySelector("button");if(b)b.click()}});
+  if(id==="f-title"){const b=document.querySelector('[data-act="add"]');if(b)b.click()}});
 /* Soft block: leaving the page during a focus block is noted kindly on return, and the time away is kept on the session. */
 document.addEventListener("visibilitychange",()=>{const t=S.timer,f=t&&t.phase==="focus"&&!t.pausedAt;
   if(document.hidden){if(f){t.awayAt=Date.now();save()}return}
@@ -1646,6 +1500,7 @@ document.addEventListener("visibilitychange",()=>{const t=S.timer,f=t&&t.phase==
     if(f&&ms>=15000){t.away=(t.away||0)+ms;awayNote=(ms<60000?Math.round(ms/1000)+" másodpercig":Math.round(ms/60000)+" percig")+" máshol jártál. Semmi baj, folytassuk."}save()}
   render()});
 window.addEventListener("beforeunload",e=>{if(deep&&S.timer&&S.timer.phase==="focus"&&!S.timer.pausedAt){e.preventDefault();e.returnValue=""}});
+carryOver();
 render();
 </script>
 </body>
