@@ -14,20 +14,22 @@ Read `HANDOFF.md` first: it holds the user's decisions, what is built, the deplo
 ## Data
 
 - Local storage key `horarium-v1`. When the Claude `db` capability is available, the state is also synced to the user's document. `normalize()` must keep old saved states loading, so add new settings with defaults there, not by assuming they exist.
-- Settings live in `S.settings`: targets, focus and break lengths, travel minutes, the weekday and weekend templates, and `alerts` (off by default).
+- Settings live in `S.settings`: targets, focus and break lengths, and `alerts` (off by default). There is no pre-filled schedule: each task carries its own optional `start` (HH:MM, `null` = unscheduled) directly, alongside its existing `plan` (duration in minutes). `S.plan[date]` only holds the day's workout choice (`workout`, `workoutDone`, `workoutCredit`), independent of any task.
+- A task can be split into several occurrences via `splitId` (shared uid across the group, each occurrence its own `date`/`start`/`plan`); `splitLabel()` derives the "x/y. rész" badge on the fly, nothing is stored about ordering.
+- `S.lastSeen` (date string) drives `carryOver()`: once per calendar day, every incomplete task dated before today moves to today with `start` cleared and `postponed` incremented. Runs at startup and from `alertsDue()`'s 15 s tick, so it also catches the app staying open across midnight.
 - `S.sessions`: one record per finished focus block (planned and actual minutes, intent, done condition, outcome, pauses, distractions). Kept 90 days; the weekly statistics and the evening story read it.
 - `S.settings.pet` (`on`, `species`, `name`) and `S.petMins` (total focus minutes, sets the pet level). `S.morning[date]` holds the morning answer (`text`, `taskId`) or `skip`.
 
 ## Structure of the script
 
-- `defTemplates()`: the default weekday and weekend schedule blocks. Every default template must have no overlapping blocks for any workout choice. The swim block adds travel and changing windows (`CHANGE` = 10 min, `travel` from settings), and `dayItems()` marks overlaps with `conf`.
-- `dayItems()`, `dayPlanMins()`, `weekStatus()`: the derived day and week views.
-- `beep()` plays the melody (`MELODY`) through Web Audio. `ensureAudio()` must run from a user gesture first.
-- `alertsDue()` runs every 15 s and fires sound and notifications for blocks that start or end. `tick()` handles the focus timer.
+- `overlaps(date,start,planMin,excludeId)`/`overlapFlash()`: a task's time only ever warns on conflict with another scheduled task that day, it never blocks the save. Called from the task add form and `taskForm`'s save.
+- `dayPlanMins()`, `weekStatus()`: the derived day and week views, summed straight from `S.tasks` (no blocks layer).
+- `beep()` plays the melody (`MELODY`) through Web Audio, used only by the focus timer's own start/end/break cues. `petSound(species)` is a separate, shorter WebAudio cue per pet species (bark/meow/chirp/whoosh/knock), used only by `alertsDue()`'s schedule alerts, together with a `petTrick()` call. `ensureAudio()` must run from a user gesture first.
+- `alertsDue()` runs every 15 s, calls `carryOver()`, and fires sound (`petSound`), a pet trick and a notification when a scheduled task (one with `start` set) starts or its planned window ends. `tick()` handles the focus timer.
 - `countdown()` updates the two live countdowns, once per second.
-- `taskHtml()` and `taskForm()`: task rows, their details panel and the edit form.
+- `taskHtml()` and `taskForm()`: task rows (with their time range, overlap and split badges), their details panel and the edit form (title, mode, date, start, duration, project). The "Új alkalom" button in a task's open panel is the split action.
 - `pauseTimer()`/`resumeTimer()` shift `startAt` so a paused block keeps its remaining time; `logSession()` writes the session record and credits the pet.
-- `resizeBlock()` and `replanToday()`: duration buttons that push following blocks, and the re-plan of the rest of today.
+- `freeWindows()`/`suggestDeep()`: free gaps today between already-scheduled tasks, used to propose start times (not blocks) for up to two unscheduled tasks.
 - `sessStats()`/`sessLessons()`: weekly statistics; lessons only with at least 8 rated blocks and a clear gap.
 - Pet: `PETS`, `petSvg()` (inline SVG, species, mood 0–4, level 0–6), `petPanel()`, `petTrick()` and CSS classes `t-<trick>`. Nothing is ever taken away from the pet.
 - `viewIntro()`: the first-visit guide (welcome, pet choice, four pages, first step). Shown while `S.onboarded` is false; old states with tasks or sessions count as onboarded.
@@ -37,7 +39,7 @@ Read `HANDOFF.md` first: it holds the user's decisions, what is built, the deplo
 - `projNames()`/`projField()`: optional project on tasks and sessions. `weekReviewHtml()` (`S.weekly[monday]`), `monthHtml()`, `suggestDeep()` (`S.sug[date]`).
 - Emotional intelligence (`S.settings.eq`: `on`, `freq` napi/3/keres): `FEELS`/`recordFeel()` (`S.feel`), `EQ_STEPS` (5 areas × 8) with `eqToday()`/`eqHtml()` (`S.eqd[date]`), breathing with the pet (`breathOn`), `EQ_EVE` evening question, `feelHtml()` weekly map; when hard feelings dominate it invites the user to write instead of pointing elsewhere. `feelBox()` lets the user write what they feel and `kindReply()` answers kindly (theme in the text first, else the feeling's group). No helpline numbers. Tone: kind, optional, never judging.
 - Simplicity first: one main action per screen. `heroHtml()` is the Ma view's top card (current block, the task to start, countdown, one big button, the pet); below it at most one nudge at a time (morning question, else deep work suggestion, else the collapsed small step). `oneThingHtml()` shows the day's one thing; `petPanel(true)` is the compact pet card.
-- `S.settings.simple` (default on) hides projects, deep work mode and the detailed week statistics; `simpleoff` and the settings switch bring them back. Settings are grouped in `<details class="sec">` (`sec()`, open state in `openSecs`). Day plan blocks keep their changes behind one "…" button (`bOpen`). The day plan is a timeline (`timelineHtml()`): start times on a left axis, gaps kept, and an amber line at the current moment (`nowLine()`), moved every second by `countdown()` and re-rendered each new minute when nothing is being edited.
+- `S.settings.simple` (default on) hides projects, deep work mode and the detailed week statistics; `simpleoff` and the settings switch bring them back. Settings are grouped in `<details class="sec">` (`sec()`, open state in `openSecs`). The day plan (`viewNapirend()`) is two lists of the day's own tasks via `taskHtml()`: "Beütemezve" (has a `start`, sorted) and "Időpont nélkül" (no `start` yet); the current one gets the `.task.now` outline, re-rendered each new minute by `countdown()` when nothing is being edited.
 - Visual system: borderless cards with soft shadow (`--sh`), one accent (munka teal), mode colours only as small dots, icon + label bottom nav (`NAV_IC`).
 - `render()` rebuilds the view; the click handler at the bottom switches on `data-act`.
 

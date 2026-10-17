@@ -25,7 +25,7 @@ Read this together with `CLAUDE.md` before changing anything. It records what th
 
 - Today view: hero card with one next step, morning question, deep-work suggestion, EQ step (at most one nudge at a time).
 - Focus timer: chosen length (25/50/90/custom), +10 min, pause and resume, intent and done condition, reflection with feeling chips, deep work mode with generated ambient sound, soft block that records time away.
-- Day plan: weekday and weekend templates, workout choice with swim travel windows, resize and push following blocks, re-plan the rest of today, timeline with the live "most" line.
+- Day plan: no pre-filled templates or sávok any more. Each task carries its own optional start time and duration, set freely by the user; a conflicting time warns (never blocks) via `overlaps()`. Unfinished tasks from earlier days carry over to today automatically, losing their old time so the user gives them a new one (`carryOver()`). A task can be split into several occurrences across different days (`splitId`, the "Új alkalom" button). The workout choice (úszás/torna/pihenőnap, "megvolt") stays as its own day-level panel, independent of scheduling; the swim travel/changing-time padding that used to come from the removed block system is gone. The pet makes a species-fitting sound (`petSound()`, separate from the focus timer's melody) when a scheduled task starts or its time is up.
 - Pet panel with drawn SVG pets (mood 0–4, level 0–6), tricks, daily mood lines, breathing together.
 - Emotional intelligence: 16 feelings in 4 groups, 40 small steps in 5 areas, evening question, weekly feeling map, free writing with `kindReply()` (23 themes × 3 replies, word replies, companion line for a second theme).
 - Reviews: weekly statistics and lessons, weekly review, monthly view, evening story.
@@ -43,4 +43,5 @@ Read this together with `CLAUDE.md` before changing anything. It records what th
 
 - The user may review the 40 EQ steps and the ~140 kind replies; change their wording only with him.
 - Possible next features: Google Calendar import of events into the day plan; AI-written kind replies through the artifact's `sample` capability (deferred by the user).
+- The free-scheduling redesign dropped the swim travel/changing-time padding that the old block system computed automatically (travel minutes to the pool, 10 min changing before/after). If the user wants that back, it would need to hang off a scheduled edzés-mode task rather than a block.
 - Keep `CLAUDE.md` and this file current at the end of each session.
